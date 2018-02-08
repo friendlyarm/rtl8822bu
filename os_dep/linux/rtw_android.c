@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,12 +11,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 
 #ifdef CONFIG_GPIO_WAKEUP
 #include <linux/gpio.h>
@@ -27,9 +22,9 @@
 #if defined(RTW_ENABLE_WIFI_CONTROL_FUNC)
 #include <linux/platform_device.h>
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 35))
-#include <linux/wlan_plat.h>
+	#include <linux/wlan_plat.h>
 #else
-#include <linux/wifi_tiwlan.h>
+	#include <linux/wifi_tiwlan.h>
 #endif
 #endif /* defined(RTW_ENABLE_WIFI_CONTROL_FUNC) */
 
@@ -96,7 +91,7 @@ const char *android_wifi_cmd_str[ANDROID_WIFI_CMD_MAX] = {
 #if defined(CONFIG_GTK_OL) && (LINUX_VERSION_CODE < KERNEL_VERSION(3, 1, 0))
 	"GTK_REKEY_OFFLOAD",
 #endif /* CONFIG_GTK_OL */
-	/*	Private command for	P2P disable*/
+/*	Private command for	P2P disable*/
 	"P2P_DISABLE",
 	"DRIVER_VERSION"
 };
@@ -184,7 +179,8 @@ unsigned int oob_gpio = 0;
  * total_len: the length of the command.
  *
  * */
-static int rtw_android_pno_setup(struct net_device *net, char *command, int total_len) {
+static int rtw_android_pno_setup(struct net_device *net, char *command, int total_len)
+{
 	pno_ssid_t pno_ssids_local[MAX_PNO_LIST_COUNT];
 	int res = -1;
 	int nssid = 0;
@@ -218,21 +214,21 @@ static int rtw_android_pno_setup(struct net_device *net, char *command, int tota
 	memset(pno_ssids_local, 0, sizeof(pno_ssids_local));
 
 	if ((cmd_tlv_temp->prefix == PNO_TLV_PREFIX) &&
-	        (cmd_tlv_temp->version == PNO_TLV_VERSION) &&
-	        (cmd_tlv_temp->subver == PNO_TLV_SUBVERSION)) {
+	    (cmd_tlv_temp->version == PNO_TLV_VERSION) &&
+	    (cmd_tlv_temp->subver == PNO_TLV_SUBVERSION)) {
 
 		str_ptr += sizeof(cmd_tlv_t);
 		tlv_size_left -= sizeof(cmd_tlv_t);
 
 		nssid = rtw_parse_ssid_list_tlv(&str_ptr, pno_ssids_local,
-		                                MAX_PNO_LIST_COUNT, &tlv_size_left);
+			     MAX_PNO_LIST_COUNT, &tlv_size_left);
 		if (nssid <= 0) {
 			RTW_INFO("SSID is not presented or corrupted ret=%d\n", nssid);
 			goto exit_proc;
 		} else {
 			if ((str_ptr[0] != PNO_TLV_TYPE_TIME) || (tlv_size_left <= 1)) {
 				RTW_INFO("%s scan duration corrupted field size %d\n",
-				         __func__, tlv_size_left);
+					 __func__, tlv_size_left);
 				goto exit_proc;
 			}
 			str_ptr++;
@@ -242,7 +238,7 @@ static int rtw_android_pno_setup(struct net_device *net, char *command, int tota
 			if (str_ptr[0] != 0) {
 				if ((str_ptr[0] != PNO_TLV_FREQ_REPEAT)) {
 					RTW_INFO("%s pno repeat : corrupted field\n",
-					         __func__);
+						 __func__);
 					goto exit_proc;
 				}
 				str_ptr++;
@@ -250,13 +246,13 @@ static int rtw_android_pno_setup(struct net_device *net, char *command, int tota
 				RTW_INFO("%s :got pno_repeat=%d\n", __FUNCTION__, pno_repeat);
 				if (str_ptr[0] != PNO_TLV_FREQ_EXPO_MAX) {
 					RTW_INFO("%s FREQ_EXPO_MAX corrupted field size\n",
-					         __func__);
+						 __func__);
 					goto exit_proc;
 				}
 				str_ptr++;
 				pno_freq_expo_max = simple_strtoul(str_ptr, &str_ptr, 16);
 				RTW_INFO("%s: pno_freq_expo_max=%d\n",
-				         __func__, pno_freq_expo_max);
+					 __func__, pno_freq_expo_max);
 			}
 		}
 	} else {
@@ -285,7 +281,8 @@ exit_proc:
  * */
 
 int rtw_android_cfg80211_pno_setup(struct net_device *net,
-                                   struct cfg80211_ssid *ssids, int n_ssids, int interval) {
+		   struct cfg80211_ssid *ssids, int n_ssids, int interval)
+{
 	int res = -1;
 	int nssid = 0;
 	int pno_time = 0;
@@ -314,7 +311,7 @@ int rtw_android_cfg80211_pno_setup(struct net_device *net,
 	RTW_INFO("%s: nssids: %d, pno_time=%d\n", __func__, nssid, pno_time);
 
 	res = rtw_dev_pno_set(net, pno_ssids_local, nssid, pno_time,
-	                      pno_repeat, pno_freq_expo_max);
+			      pno_repeat, pno_freq_expo_max);
 
 #ifdef CONFIG_PNO_SET_DEBUG
 	rtw_dev_pno_debug(net);
@@ -323,7 +320,8 @@ exit_proc:
 	return res;
 }
 
-int rtw_android_pno_enable(struct net_device *net, int pno_enable) {
+int rtw_android_pno_enable(struct net_device *net, int pno_enable)
+{
 	_adapter *padapter = (_adapter *)rtw_netdev_priv(net);
 	struct pwrctrl_priv *pwrctl = adapter_to_pwrctl(padapter);
 
@@ -350,7 +348,8 @@ int rtw_android_pno_enable(struct net_device *net, int pno_enable) {
 }
 #endif /* CONFIG_PNO_SUPPORT */
 
-int rtw_android_cmdstr_to_num(char *cmdstr) {
+int rtw_android_cmdstr_to_num(char *cmdstr)
+{
 	int cmd_num;
 	for (cmd_num = 0 ; cmd_num < ANDROID_WIFI_CMD_MAX; cmd_num++)
 		if (0 == strnicmp(cmdstr , android_wifi_cmd_str[cmd_num], strlen(android_wifi_cmd_str[cmd_num])))
@@ -359,7 +358,8 @@ int rtw_android_cmdstr_to_num(char *cmdstr) {
 	return cmd_num;
 }
 
-int rtw_android_get_rssi(struct net_device *net, char *command, int total_len) {
+int rtw_android_get_rssi(struct net_device *net, char *command, int total_len)
+{
 	_adapter *padapter = (_adapter *)rtw_netdev_priv(net);
 	struct	mlme_priv	*pmlmepriv = &(padapter->mlmepriv);
 	struct	wlan_network	*pcur_network = &pmlmepriv->cur_network;
@@ -367,13 +367,14 @@ int rtw_android_get_rssi(struct net_device *net, char *command, int total_len) {
 
 	if (check_fwstate(pmlmepriv, _FW_LINKED) == _TRUE) {
 		bytes_written += snprintf(&command[bytes_written], total_len, "%s rssi %d",
-		                          pcur_network->network.Ssid.Ssid, padapter->recvpriv.rssi);
+			pcur_network->network.Ssid.Ssid, padapter->recvpriv.rssi);
 	}
 
 	return bytes_written;
 }
 
-int rtw_android_get_link_speed(struct net_device *net, char *command, int total_len) {
+int rtw_android_get_link_speed(struct net_device *net, char *command, int total_len)
+{
 	_adapter *padapter = (_adapter *)rtw_netdev_priv(net);
 	struct	mlme_priv	*pmlmepriv = &(padapter->mlmepriv);
 	struct	wlan_network	*pcur_network = &pmlmepriv->cur_network;
@@ -386,7 +387,8 @@ int rtw_android_get_link_speed(struct net_device *net, char *command, int total_
 	return bytes_written;
 }
 
-int rtw_android_get_macaddr(struct net_device *net, char *command, int total_len) {
+int rtw_android_get_macaddr(struct net_device *net, char *command, int total_len)
+{
 	_adapter *adapter = (_adapter *)rtw_netdev_priv(net);
 	int bytes_written = 0;
 
@@ -394,7 +396,8 @@ int rtw_android_get_macaddr(struct net_device *net, char *command, int total_len
 	return bytes_written;
 }
 
-int rtw_android_set_country(struct net_device *net, char *command, int total_len) {
+int rtw_android_set_country(struct net_device *net, char *command, int total_len)
+{
 	_adapter *adapter = (_adapter *)rtw_netdev_priv(net);
 	char *country_code = command + strlen(android_wifi_cmd_str[ANDROID_WIFI_CMD_COUNTRY]) + 1;
 	int ret = _FAIL;
@@ -404,7 +407,8 @@ int rtw_android_set_country(struct net_device *net, char *command, int total_len
 	return (ret == _SUCCESS) ? 0 : -1;
 }
 
-int rtw_android_get_p2p_dev_addr(struct net_device *net, char *command, int total_len) {
+int rtw_android_get_p2p_dev_addr(struct net_device *net, char *command, int total_len)
+{
 	int bytes_written = 0;
 
 	/* We use the same address as our HW MAC address */
@@ -414,7 +418,8 @@ int rtw_android_get_p2p_dev_addr(struct net_device *net, char *command, int tota
 	return bytes_written;
 }
 
-int rtw_android_set_block_scan(struct net_device *net, char *command, int total_len) {
+int rtw_android_set_block_scan(struct net_device *net, char *command, int total_len)
+{
 	_adapter *adapter = (_adapter *)rtw_netdev_priv(net);
 	char *block_value = command + strlen(android_wifi_cmd_str[ANDROID_WIFI_CMD_BLOCK_SCAN]) + 1;
 
@@ -425,7 +430,8 @@ int rtw_android_set_block_scan(struct net_device *net, char *command, int total_
 	return 0;
 }
 
-int rtw_android_set_block(struct net_device *net, char *command, int total_len) {
+int rtw_android_set_block(struct net_device *net, char *command, int total_len)
+{
 	_adapter *adapter = (_adapter *)rtw_netdev_priv(net);
 	char *block_value = command + strlen(android_wifi_cmd_str[ANDROID_WIFI_CMD_BLOCK]) + 1;
 
@@ -436,7 +442,8 @@ int rtw_android_set_block(struct net_device *net, char *command, int total_len) 
 	return 0;
 }
 
-int rtw_android_setband(struct net_device *net, char *command, int total_len) {
+int rtw_android_setband(struct net_device *net, char *command, int total_len)
+{
 	_adapter *adapter = (_adapter *)rtw_netdev_priv(net);
 	char *arg = command + strlen(android_wifi_cmd_str[ANDROID_WIFI_CMD_SETBAND]) + 1;
 	u32 band = WIFI_FREQUENCY_BAND_AUTO;
@@ -448,7 +455,8 @@ int rtw_android_setband(struct net_device *net, char *command, int total_len) {
 	return (ret == _SUCCESS) ? 0 : -1;
 }
 
-int rtw_android_getband(struct net_device *net, char *command, int total_len) {
+int rtw_android_getband(struct net_device *net, char *command, int total_len)
+{
 	_adapter *adapter = (_adapter *)rtw_netdev_priv(net);
 	int bytes_written = 0;
 
@@ -458,7 +466,8 @@ int rtw_android_getband(struct net_device *net, char *command, int total_len) {
 }
 
 #ifdef CONFIG_WFD
-int rtw_android_set_miracast_mode(struct net_device *net, char *command, int total_len) {
+int rtw_android_set_miracast_mode(struct net_device *net, char *command, int total_len)
+{
 	_adapter *adapter = (_adapter *)rtw_netdev_priv(net);
 	struct wifi_display_info *wfd_info = &adapter->wfd_info;
 	char *arg = command + strlen(android_wifi_cmd_str[ANDROID_WIFI_CMD_MIRACAST]) + 1;
@@ -493,7 +502,8 @@ exit:
 }
 #endif /* CONFIG_WFD */
 
-int get_int_from_command(char *pcmd) {
+int get_int_from_command(char *pcmd)
+{
 	int i = 0;
 
 	for (i = 0; i < strlen(pcmd); i++) {
@@ -507,7 +517,8 @@ int get_int_from_command(char *pcmd) {
 }
 
 #if defined(CONFIG_GTK_OL) && (LINUX_VERSION_CODE < KERNEL_VERSION(3, 1, 0))
-int rtw_gtk_offload(struct net_device *net, u8 *cmd_ptr) {
+int rtw_gtk_offload(struct net_device *net, u8 *cmd_ptr)
+{
 	int i;
 	/* u8 *cmd_ptr = priv_cmd.buf; */
 	struct sta_info *psta;
@@ -550,7 +561,8 @@ int rtw_gtk_offload(struct net_device *net, u8 *cmd_ptr) {
 }
 #endif /* CONFIG_GTK_OL */
 
-int rtw_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd) {
+int rtw_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
+{
 	int ret = 0;
 	char *command = NULL;
 	int cmd_num;
@@ -576,22 +588,27 @@ int rtw_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd) {
 		goto exit;
 	}
 #ifdef CONFIG_COMPAT
-	/* User space is 32-bit, use compat ioctl */
-	compat_android_wifi_priv_cmd compat_priv_cmd;
+#if (KERNEL_VERSION(4, 6, 0) > LINUX_VERSION_CODE)
+	if (is_compat_task()) {
+#else
+	if (in_compat_syscall()) {
+#endif
+		/* User space is 32-bit, use compat ioctl */
+		compat_android_wifi_priv_cmd compat_priv_cmd;
 
-	if (copy_from_user(&compat_priv_cmd, ifr->ifr_data, sizeof(compat_android_wifi_priv_cmd))) {
-		ret = -EFAULT;
-		goto exit;
-	}
-	priv_cmd.buf = compat_ptr(compat_priv_cmd.buf);
-	priv_cmd.used_len = compat_priv_cmd.used_len;
-	priv_cmd.total_len = compat_priv_cmd.total_len;
-
+		if (copy_from_user(&compat_priv_cmd, ifr->ifr_data, sizeof(compat_android_wifi_priv_cmd))) {
+			ret = -EFAULT;
+			goto exit;
+		}
+		priv_cmd.buf = compat_ptr(compat_priv_cmd.buf);
+		priv_cmd.used_len = compat_priv_cmd.used_len;
+		priv_cmd.total_len = compat_priv_cmd.total_len;
+	} else
 #endif /* CONFIG_COMPAT */
-	if (copy_from_user(&priv_cmd, ifr->ifr_data, sizeof(android_wifi_priv_cmd))) {
-		ret = -EFAULT;
-		goto exit;
-	}
+		if (copy_from_user(&priv_cmd, ifr->ifr_data, sizeof(android_wifi_priv_cmd))) {
+			ret = -EFAULT;
+			goto exit;
+		}
 	if (padapter->registrypriv.mp_mode == 1) {
 		ret = -EFAULT;
 		goto exit;
@@ -615,7 +632,7 @@ int rtw_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd) {
 	}
 
 	RTW_INFO("%s: Android private cmd \"%s\" on %s\n"
-	         , __FUNCTION__, command, ifr->ifr_name);
+		 , __FUNCTION__, command, ifr->ifr_name);
 
 	cmd_num = rtw_android_cmdstr_to_num(command);
 
@@ -629,7 +646,7 @@ int rtw_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd) {
 
 	if (!g_wifi_on) {
 		RTW_INFO("%s: Ignore private cmd \"%s\" - iface %s is down\n"
-		         , __FUNCTION__, command, ifr->ifr_name);
+			 , __FUNCTION__, command, ifr->ifr_name);
 		ret = 0;
 		goto exit;
 	}
@@ -917,7 +934,8 @@ static struct resource *wifi_irqres = NULL;
 static int wifi_add_dev(void);
 static void wifi_del_dev(void);
 
-int rtw_android_wifictrl_func_add(void) {
+int rtw_android_wifictrl_func_add(void)
+{
 	int ret = 0;
 	sema_init(&wifi_control_sem, 0);
 
@@ -937,14 +955,16 @@ int rtw_android_wifictrl_func_add(void) {
 	return ret;
 }
 
-void rtw_android_wifictrl_func_del(void) {
+void rtw_android_wifictrl_func_del(void)
+{
 	if (g_wifidev_registered) {
 		wifi_del_dev();
 		g_wifidev_registered = 0;
 	}
 }
 
-void *wl_android_prealloc(int section, unsigned long size) {
+void *wl_android_prealloc(int section, unsigned long size)
+{
 	void *alloc_ptr = NULL;
 	if (wifi_control_data && wifi_control_data->mem_prealloc) {
 		alloc_ptr = wifi_control_data->mem_prealloc(section, size);
@@ -960,7 +980,8 @@ void *wl_android_prealloc(int section, unsigned long size) {
 	return NULL;
 }
 
-int wifi_get_irq_number(unsigned long *irq_flags_ptr) {
+int wifi_get_irq_number(unsigned long *irq_flags_ptr)
+{
 	if (wifi_irqres) {
 		*irq_flags_ptr = wifi_irqres->flags & IRQF_TRIGGER_MASK;
 		return (int)wifi_irqres->start;
@@ -972,7 +993,8 @@ int wifi_get_irq_number(unsigned long *irq_flags_ptr) {
 #endif
 }
 
-int wifi_set_power(int on, unsigned long msec) {
+int wifi_set_power(int on, unsigned long msec)
+{
 	RTW_INFO("%s = %d\n", __FUNCTION__, on);
 	if (wifi_control_data && wifi_control_data->set_power)
 		wifi_control_data->set_power(on);
@@ -982,7 +1004,8 @@ int wifi_set_power(int on, unsigned long msec) {
 }
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 35))
-int wifi_get_mac_addr(unsigned char *buf) {
+int wifi_get_mac_addr(unsigned char *buf)
+{
 	RTW_INFO("%s\n", __FUNCTION__);
 	if (!buf)
 		return -EINVAL;
@@ -993,7 +1016,8 @@ int wifi_get_mac_addr(unsigned char *buf) {
 #endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 35)) */
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)) || defined(COMPAT_KERNEL_RELEASE)
-void *wifi_get_country_code(char *ccode) {
+void *wifi_get_country_code(char *ccode)
+{
 	RTW_INFO("%s\n", __FUNCTION__);
 	if (!ccode)
 		return NULL;
@@ -1003,16 +1027,18 @@ void *wifi_get_country_code(char *ccode) {
 }
 #endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 39)) */
 
-static int wifi_set_carddetect(int on) {
+static int wifi_set_carddetect(int on)
+{
 	RTW_INFO("%s = %d\n", __FUNCTION__, on);
 	if (wifi_control_data && wifi_control_data->set_carddetect)
 		wifi_control_data->set_carddetect(on);
 	return 0;
 }
 
-static int wifi_probe(struct platform_device *pdev) {
+static int wifi_probe(struct platform_device *pdev)
+{
 	struct wifi_platform_data *wifi_ctrl =
-	    (struct wifi_platform_data *)(pdev->dev.platform_data);
+		(struct wifi_platform_data *)(pdev->dev.platform_data);
 	int wifi_wake_gpio = 0;
 
 	RTW_INFO("## %s\n", __FUNCTION__);
@@ -1020,13 +1046,13 @@ static int wifi_probe(struct platform_device *pdev) {
 
 	if (wifi_irqres == NULL)
 		wifi_irqres = platform_get_resource_byname(pdev,
-		              IORESOURCE_IRQ, "bcm4329_wlan_irq");
+				IORESOURCE_IRQ, "bcm4329_wlan_irq");
 	else
 		wifi_wake_gpio = wifi_irqres->start;
 
 #ifdef CONFIG_GPIO_WAKEUP
-	printk("%s: gpio:%d wifi_wake_gpio:%d\n", __func__,
-	       wifi_irqres->start, wifi_wake_gpio);
+	RTW_INFO("%s: gpio:%d wifi_wake_gpio:%d\n", __func__,
+	       (int)wifi_irqres->start, wifi_wake_gpio);
 
 	if (wifi_wake_gpio > 0) {
 #ifdef CONFIG_PLATFORM_INTEL_BYT
@@ -1036,10 +1062,10 @@ static int wifi_probe(struct platform_device *pdev) {
 		gpio_direction_input(wifi_wake_gpio);
 		oob_irq = gpio_to_irq(wifi_wake_gpio);
 #endif /* CONFIG_PLATFORM_INTEL_BYT */
-		printk("%s oob_irq:%d\n", __func__, oob_irq);
+		RTW_INFO("%s oob_irq:%d\n", __func__, oob_irq);
 	} else if (wifi_irqres) {
 		oob_irq = wifi_irqres->start;
-		printk("%s oob_irq:%d\n", __func__, oob_irq);
+		RTW_INFO("%s oob_irq:%d\n", __func__, oob_irq);
 	}
 #endif
 	wifi_control_data = wifi_ctrl;
@@ -1054,7 +1080,8 @@ static int wifi_probe(struct platform_device *pdev) {
 #ifdef RTW_SUPPORT_PLATFORM_SHUTDOWN
 extern PADAPTER g_test_adapter;
 
-static void shutdown_card(void) {
+static void shutdown_card(void)
+{
 	u32 addr;
 	u8 tmp8, cnt = 0;
 
@@ -1067,6 +1094,14 @@ static void shutdown_card(void) {
 	LeaveAllPowerSaveMode(g_test_adapter);
 #endif /* CONFIG_FWLPS_IN_IPS */
 
+#ifdef CONFIG_WOWLAN
+#ifdef CONFIG_GPIO_WAKEUP
+	/*default wake up pin change to BT*/
+	RTW_INFO("%s:default wake up pin change to BT\n", __FUNCTION__);
+	rtw_hal_switch_gpio_wl_ctrl(g_test_adapter, WAKEUP_GPIO_IDX, _FALSE);
+#endif /* CONFIG_GPIO_WAKEUP */
+#endif /* CONFIG_WOWLAN */
+
 	/* Leave SDIO HCI Suspend */
 	addr = 0x10250086;
 	rtw_write8(g_test_adapter, addr, 0);
@@ -1074,14 +1109,14 @@ static void shutdown_card(void) {
 		tmp8 = rtw_read8(g_test_adapter, addr);
 		cnt++;
 		RTW_INFO(FUNC_ADPT_FMT ": polling SDIO_HSUS_CTRL(0x%x)=0x%x, cnt=%d\n",
-		         FUNC_ADPT_ARG(g_test_adapter), addr, tmp8, cnt);
+			 FUNC_ADPT_ARG(g_test_adapter), addr, tmp8, cnt);
 
 		if (tmp8 & BIT(1))
 			break;
 
 		if (cnt >= 100) {
 			RTW_INFO(FUNC_ADPT_FMT ": polling 0x%x[1]==1 FAIL!!\n",
-			         FUNC_ADPT_ARG(g_test_adapter), addr);
+				 FUNC_ADPT_ARG(g_test_adapter), addr);
 			break;
 		}
 
@@ -1099,27 +1134,28 @@ static void shutdown_card(void) {
 	tmp8 |= BIT(4);
 	rtw_write8(g_test_adapter, addr, tmp8);
 	RTW_INFO(FUNC_ADPT_FMT ": read after write 0x%x=0x%x\n",
-	         FUNC_ADPT_ARG(g_test_adapter), addr, rtw_read8(g_test_adapter, addr));
+		FUNC_ADPT_ARG(g_test_adapter), addr, rtw_read8(g_test_adapter, addr));
 
 	addr = 0x05;
 	tmp8 = rtw_read8(g_test_adapter, addr);
 	tmp8 |= BIT(7);
 	rtw_write8(g_test_adapter, addr, tmp8);
 	RTW_INFO(FUNC_ADPT_FMT ": read after write 0x%x=0x%x\n",
-	         FUNC_ADPT_ARG(g_test_adapter), addr, rtw_read8(g_test_adapter, addr));
+		FUNC_ADPT_ARG(g_test_adapter), addr, rtw_read8(g_test_adapter, addr));
 
 	/* lock register page0 0x0~0xB read/write */
 	rtw_write8(g_test_adapter, 0x1C, 0x0E);
 
 	rtw_set_surprise_removed(g_test_adapter);
 	RTW_INFO(FUNC_ADPT_FMT ": bSurpriseRemoved=%s\n",
-	         FUNC_ADPT_ARG(g_test_adapter), rtw_is_surprise_removed(g_test_adapter) ? "True" : "False");
+		FUNC_ADPT_ARG(g_test_adapter), rtw_is_surprise_removed(g_test_adapter) ? "True" : "False");
 }
 #endif /* RTW_SUPPORT_PLATFORM_SHUTDOWN */
 
-static int wifi_remove(struct platform_device *pdev) {
+static int wifi_remove(struct platform_device *pdev)
+{
 	struct wifi_platform_data *wifi_ctrl =
-	    (struct wifi_platform_data *)(pdev->dev.platform_data);
+		(struct wifi_platform_data *)(pdev->dev.platform_data);
 
 	RTW_INFO("## %s\n", __FUNCTION__);
 	wifi_control_data = wifi_ctrl;
@@ -1132,9 +1168,10 @@ static int wifi_remove(struct platform_device *pdev) {
 }
 
 #ifdef RTW_SUPPORT_PLATFORM_SHUTDOWN
-static void wifi_shutdown(struct platform_device *pdev) {
+static void wifi_shutdown(struct platform_device *pdev)
+{
 	struct wifi_platform_data *wifi_ctrl =
-	    (struct wifi_platform_data *)(pdev->dev.platform_data);
+		(struct wifi_platform_data *)(pdev->dev.platform_data);
 
 
 	RTW_INFO("## %s\n", __FUNCTION__);
@@ -1147,7 +1184,8 @@ static void wifi_shutdown(struct platform_device *pdev) {
 }
 #endif /* RTW_SUPPORT_PLATFORM_SHUTDOWN */
 
-static int wifi_suspend(struct platform_device *pdev, pm_message_t state) {
+static int wifi_suspend(struct platform_device *pdev, pm_message_t state)
+{
 	RTW_INFO("##> %s\n", __FUNCTION__);
 #if (LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 39)) && defined(OOB_INTR_ONLY)
 	bcmsdh_oob_intr_set(0);
@@ -1155,7 +1193,8 @@ static int wifi_suspend(struct platform_device *pdev, pm_message_t state) {
 	return 0;
 }
 
-static int wifi_resume(struct platform_device *pdev) {
+static int wifi_resume(struct platform_device *pdev)
+{
 	RTW_INFO("##> %s\n", __FUNCTION__);
 #if (LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 39)) && defined(OOB_INTR_ONLY)
 	if (dhd_os_check_if_up(bcmsdh_get_drvdata()))
@@ -1188,14 +1227,16 @@ static struct platform_driver wifi_device_legacy = {
 	}
 };
 
-static int wifi_add_dev(void) {
+static int wifi_add_dev(void)
+{
 	RTW_INFO("## Calling platform_driver_register\n");
 	platform_driver_register(&wifi_device);
 	platform_driver_register(&wifi_device_legacy);
 	return 0;
 }
 
-static void wifi_del_dev(void) {
+static void wifi_del_dev(void)
+{
 	RTW_INFO("## Unregister platform_driver_register\n");
 	platform_driver_unregister(&wifi_device);
 	platform_driver_unregister(&wifi_device_legacy);
@@ -1204,7 +1245,8 @@ static void wifi_del_dev(void) {
 
 #ifdef CONFIG_GPIO_WAKEUP
 #ifdef CONFIG_PLATFORM_INTEL_BYT
-int wifi_configure_gpio(void) {
+int wifi_configure_gpio(void)
+{
 	if (gpio_request(oob_gpio, "oob_irq")) {
 		RTW_INFO("## %s Cannot request GPIO\n", __FUNCTION__);
 		return -1;
@@ -1225,7 +1267,8 @@ int wifi_configure_gpio(void) {
 	return 0;
 }
 #endif /* CONFIG_PLATFORM_INTEL_BYT */
-void wifi_free_gpio(unsigned int gpio) {
+void wifi_free_gpio(unsigned int gpio)
+{
 #ifdef CONFIG_PLATFORM_INTEL_BYT
 	if (gpio)
 		gpio_free(gpio);

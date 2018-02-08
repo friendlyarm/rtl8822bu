@@ -1,10 +1,26 @@
+/******************************************************************************
+ *
+ * Copyright(c) 2016 - 2017 Realtek Corporation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ ******************************************************************************/
+
 #include "halmac_88xx_cfg.h"
 
 /**
- * halmac_init_usb_cfg_88xx() - init USB related register
- * @pHalmac_adapter
- * Author : KaiYuan Chang
+ * halmac_init_usb_cfg_88xx() - init USB
+ * @pHalmac_adapter : the adapter of halmac
+ * Author : KaiYuan Chang/Ivan Lin
  * Return : HALMAC_RET_STATUS
+ * More details of status code can be found in prototype document
  */
 HALMAC_RET_STATUS
 halmac_init_usb_cfg_88xx(
@@ -14,26 +30,24 @@ halmac_init_usb_cfg_88xx(
 	VOID *pDriver_adapter = NULL;
 	u8 value8 = 0;
 
-	if (HALMAC_RET_SUCCESS != halmac_adapter_validate(pHalmac_adapter))
+	if (halmac_adapter_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_ADAPTER_INVALID;
 
-	if (HALMAC_RET_SUCCESS != halmac_api_validate(pHalmac_adapter))
+	if (halmac_api_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_API_INVALID;
-
-	halmac_api_record_id_88xx(pHalmac_adapter, HALMAC_API_INIT_USB_CFG);
 
 	pDriver_adapter = pHalmac_adapter->pDriver_adapter;
 
 	PLATFORM_MSG_PRINT(pDriver_adapter, HALMAC_MSG_INIT, HALMAC_DBG_TRACE, "halmac_init_usb_cfg_88xx ==========>\n");
 
-	value8 |= (BIT_DMA_MODE | (0x3 << BIT_SHIFT_BURST_CNT));                /* burst number = 4 */
+	value8 |= (BIT_DMA_MODE | (0x3 << BIT_SHIFT_BURST_CNT)); /* burst number = 4 */
 
-	if (PLATFORM_REG_READ_8(pDriver_adapter, REG_SYS_CFG2 + 3) == 0x20) {   /* usb3.0 */
+	if (PLATFORM_REG_READ_8(pDriver_adapter, REG_SYS_CFG2 + 3) == 0x20) { /* usb3.0 */
 		value8 |= (HALMAC_USB_BURST_SIZE_3_0 << BIT_SHIFT_BURST_SIZE);
 	} else {
-		if ((PLATFORM_REG_READ_8(pDriver_adapter, REG_USB_USBSTAT) & 0x3) == 0x1)       /* usb2.0 */
+		if ((PLATFORM_REG_READ_8(pDriver_adapter, REG_USB_USBSTAT) & 0x3) == 0x1) /* usb2.0 */
 			value8 |= HALMAC_USB_BURST_SIZE_2_0_HSPEED << BIT_SHIFT_BURST_SIZE;
-		else                                                                            /* usb1.1 */
+		else /* usb1.1 */
 			value8 |= HALMAC_USB_BURST_SIZE_2_0_FSPEED << BIT_SHIFT_BURST_SIZE;
 	}
 
@@ -46,10 +60,11 @@ halmac_init_usb_cfg_88xx(
 }
 
 /**
- * halmac_deinit_usb_cfg_88xx() - init USB related register
- * @pHalmac_adapter
- * Author : KaiYuan Chang
+ * halmac_deinit_usb_cfg_88xx() - deinit USB
+ * @pHalmac_adapter : the adapter of halmac
+ * Author : KaiYuan Chang/Ivan Lin
  * Return : HALMAC_RET_STATUS
+ * More details of status code can be found in prototype document
  */
 HALMAC_RET_STATUS
 halmac_deinit_usb_cfg_88xx(
@@ -58,13 +73,11 @@ halmac_deinit_usb_cfg_88xx(
 {
 	VOID *pDriver_adapter = NULL;
 
-	if (HALMAC_RET_SUCCESS != halmac_adapter_validate(pHalmac_adapter))
+	if (halmac_adapter_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_ADAPTER_INVALID;
 
-	if (HALMAC_RET_SUCCESS != halmac_api_validate(pHalmac_adapter))
+	if (halmac_api_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_API_INVALID;
-
-	halmac_api_record_id_88xx(pHalmac_adapter, HALMAC_API_DEINIT_USB_CFG);
 
 	pDriver_adapter = pHalmac_adapter->pDriver_adapter;
 
@@ -76,11 +89,12 @@ halmac_deinit_usb_cfg_88xx(
 }
 
 /**
- * halmac_cfg_rx_aggregation_88xx_usb() -  config rx aggregation
- * @pHalmac_adapter
+ * halmac_cfg_rx_aggregation_88xx_usb() - config rx aggregation
+ * @pHalmac_adapter : the adapter of halmac
  * @halmac_rx_agg_mode
- * Author : KaiYuan Chang
+ * Author : KaiYuan Chang/Ivan Lin
  * Return : HALMAC_RET_STATUS
+ * More details of status code can be found in prototype document
  */
 HALMAC_RET_STATUS
 halmac_cfg_rx_aggregation_88xx_usb(
@@ -93,13 +107,11 @@ halmac_cfg_rx_aggregation_88xx_usb(
 	VOID *pDriver_adapter = NULL;
 	PHALMAC_API pHalmac_api;
 
-	if (HALMAC_RET_SUCCESS != halmac_adapter_validate(pHalmac_adapter))
+	if (halmac_adapter_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_ADAPTER_INVALID;
 
-	if (HALMAC_RET_SUCCESS != halmac_api_validate(pHalmac_adapter))
+	if (halmac_api_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_API_INVALID;
-
-	halmac_api_record_id_88xx(pHalmac_adapter, HALMAC_API_CFG_RX_AGGREGATION);
 
 	pDriver_adapter = pHalmac_adapter->pDriver_adapter;
 	pHalmac_api = (PHALMAC_API)pHalmac_adapter->pHalmac_api;
@@ -128,7 +140,7 @@ halmac_cfg_rx_aggregation_88xx_usb(
 		break;
 	}
 
-	if (_FALSE == phalmac_rxagg_cfg->threshold.drv_define) {
+	if (phalmac_rxagg_cfg->threshold.drv_define == _FALSE) {
 		if (PLATFORM_REG_READ_8(pDriver_adapter, REG_SYS_CFG2 + 3) == 0x20) {
 			/* usb3.0 */
 			size = 0x5;
@@ -145,7 +157,7 @@ halmac_cfg_rx_aggregation_88xx_usb(
 
 	HALMAC_REG_WRITE_8(pHalmac_adapter, REG_TXDMA_PQ_MAP, agg_enable);
 	HALMAC_REG_WRITE_8(pHalmac_adapter, REG_RXDMA_AGG_PG_TH + 3, dma_usb_agg);
-	HALMAC_REG_WRITE_16(pHalmac_adapter, REG_RXDMA_AGG_PG_TH, (u16)(size | (timeout << BIT_SHIFT_DMA_AGG_TO)));
+	HALMAC_REG_WRITE_16(pHalmac_adapter, REG_RXDMA_AGG_PG_TH, (u16)(size | (timeout << BIT_SHIFT_DMA_AGG_TO_V1)));
 
 	PLATFORM_MSG_PRINT(pDriver_adapter, HALMAC_MSG_INIT, HALMAC_DBG_TRACE, "halmac_cfg_rx_aggregation_88xx_usb <==========\n");
 
@@ -154,10 +166,11 @@ halmac_cfg_rx_aggregation_88xx_usb(
 
 /**
  * halmac_reg_read_8_usb_88xx() - read 1byte register
- * @pHalmac_adapter
- * @halmac_offset
- * Author : KaiYuan Chang
+ * @pHalmac_adapter : the adapter of halmac
+ * @halmac_offset : register offset
+ * Author : KaiYuan Chang/Ivan Lin
  * Return : HALMAC_RET_STATUS
+ * More details of status code can be found in prototype document
  */
 u8
 halmac_reg_read_8_usb_88xx(
@@ -169,10 +182,10 @@ halmac_reg_read_8_usb_88xx(
 	VOID *pDriver_adapter = NULL;
 	PHALMAC_API pHalmac_api;
 
-	if (HALMAC_RET_SUCCESS != halmac_adapter_validate(pHalmac_adapter))
+	if (halmac_adapter_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_ADAPTER_INVALID;
 
-	if (HALMAC_RET_SUCCESS != halmac_api_validate(pHalmac_adapter))
+	if (halmac_api_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_API_INVALID;
 
 	pDriver_adapter = pHalmac_adapter->pDriver_adapter;
@@ -189,11 +202,12 @@ halmac_reg_read_8_usb_88xx(
 
 /**
  * halmac_reg_write_8_usb_88xx() - write 1byte register
- * @pHalmac_adapter
- * @halmac_offset
- * @halmac_data
- * Author : KaiYuan Chang
+ * @pHalmac_adapter : the adapter of halmac
+ * @halmac_offset : register offset
+ * @halmac_data : register value
+ * Author : KaiYuan Chang/Ivan Lin
  * Return : HALMAC_RET_STATUS
+ * More details of status code can be found in prototype document
  */
 HALMAC_RET_STATUS
 halmac_reg_write_8_usb_88xx(
@@ -205,10 +219,10 @@ halmac_reg_write_8_usb_88xx(
 	VOID *pDriver_adapter = NULL;
 	PHALMAC_API pHalmac_api;
 
-	if (HALMAC_RET_SUCCESS != halmac_adapter_validate(pHalmac_adapter))
+	if (halmac_adapter_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_ADAPTER_INVALID;
 
-	if (HALMAC_RET_SUCCESS != halmac_api_validate(pHalmac_adapter))
+	if (halmac_api_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_API_INVALID;
 
 	pDriver_adapter = pHalmac_adapter->pDriver_adapter;
@@ -226,10 +240,11 @@ halmac_reg_write_8_usb_88xx(
 
 /**
  * halmac_reg_read_16_usb_88xx() - read 2byte register
- * @pHalmac_adapter
- * @halmac_offset
- * Author : KaiYuan Chang
+ * @pHalmac_adapter : the adapter of halmac
+ * @halmac_offset : register offset
+ * Author : KaiYuan Chang/Ivan Lin
  * Return : HALMAC_RET_STATUS
+ * More details of status code can be found in prototype document
  */
 u16
 halmac_reg_read_16_usb_88xx(
@@ -245,10 +260,10 @@ halmac_reg_read_16_usb_88xx(
 		u8	byte[2];
 	} value16 = { 0x0000 };
 
-	if (HALMAC_RET_SUCCESS != halmac_adapter_validate(pHalmac_adapter))
+	if (halmac_adapter_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_ADAPTER_INVALID;
 
-	if (HALMAC_RET_SUCCESS != halmac_api_validate(pHalmac_adapter))
+	if (halmac_api_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_API_INVALID;
 
 	pDriver_adapter = pHalmac_adapter->pDriver_adapter;
@@ -265,11 +280,12 @@ halmac_reg_read_16_usb_88xx(
 
 /**
  * halmac_reg_write_16_usb_88xx() - write 2byte register
- * @pHalmac_adapter
- * @halmac_offset
- * @halmac_data
- * Author : KaiYuan Chang
+ * @pHalmac_adapter : the adapter of halmac
+ * @halmac_offset : register offset
+ * @halmac_data : register value
+ * Author : KaiYuan Chang/Ivan Lin
  * Return : HALMAC_RET_STATUS
+ * More details of status code can be found in prototype document
  */
 HALMAC_RET_STATUS
 halmac_reg_write_16_usb_88xx(
@@ -281,10 +297,10 @@ halmac_reg_write_16_usb_88xx(
 	VOID *pDriver_adapter = NULL;
 	PHALMAC_API pHalmac_api;
 
-	if (HALMAC_RET_SUCCESS != halmac_adapter_validate(pHalmac_adapter))
+	if (halmac_adapter_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_ADAPTER_INVALID;
 
-	if (HALMAC_RET_SUCCESS != halmac_api_validate(pHalmac_adapter))
+	if (halmac_api_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_API_INVALID;
 
 	pDriver_adapter = pHalmac_adapter->pDriver_adapter;
@@ -301,10 +317,11 @@ halmac_reg_write_16_usb_88xx(
 
 /**
  * halmac_reg_read_32_usb_88xx() - read 4byte register
- * @pHalmac_adapter
- * @halmac_offset
- * Author : KaiYuan Chang
+ * @pHalmac_adapter : the adapter of halmac
+ * @halmac_offset : register offset
+ * Author : KaiYuan Chang/Ivan Lin
  * Return : HALMAC_RET_STATUS
+ * More details of status code can be found in prototype document
  */
 u32
 halmac_reg_read_32_usb_88xx(
@@ -320,10 +337,10 @@ halmac_reg_read_32_usb_88xx(
 		u8	byte[4];
 	} value32 = { 0x00000000 };
 
-	if (HALMAC_RET_SUCCESS != halmac_adapter_validate(pHalmac_adapter))
+	if (halmac_adapter_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_ADAPTER_INVALID;
 
-	if (HALMAC_RET_SUCCESS != halmac_api_validate(pHalmac_adapter))
+	if (halmac_api_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_API_INVALID;
 
 	pDriver_adapter = pHalmac_adapter->pDriver_adapter;
@@ -340,11 +357,12 @@ halmac_reg_read_32_usb_88xx(
 
 /**
  * halmac_reg_write_32_usb_88xx() - write 4byte register
- * @pHalmac_adapter
- * @halmac_offset
- * @halmac_data
- * Author : KaiYuan Chang
+ * @pHalmac_adapter : the adapter of halmac
+ * @halmac_offset : register offset
+ * @halmac_data : register value
+ * Author : KaiYuan Chang/Ivan Lin
  * Return : HALMAC_RET_STATUS
+ * More details of status code can be found in prototype document
  */
 HALMAC_RET_STATUS
 halmac_reg_write_32_usb_88xx(
@@ -356,10 +374,10 @@ halmac_reg_write_32_usb_88xx(
 	VOID *pDriver_adapter = NULL;
 	PHALMAC_API pHalmac_api;
 
-	if (HALMAC_RET_SUCCESS != halmac_adapter_validate(pHalmac_adapter))
+	if (halmac_adapter_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_ADAPTER_INVALID;
 
-	if (HALMAC_RET_SUCCESS != halmac_api_validate(pHalmac_adapter))
+	if (halmac_api_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_API_INVALID;
 
 	pDriver_adapter = pHalmac_adapter->pDriver_adapter;
@@ -375,11 +393,12 @@ halmac_reg_write_32_usb_88xx(
 }
 
 /**
- * halmac_set_bulkout_num_88xx() - set bulk out endpoint number
- * @pHalmac_adapter
- * @bulkout_num
+ * halmac_set_bulkout_num_usb_88xx() - inform bulk-out num
+ * @pHalmac_adapter : the adapter of halmac
+ * @bulkout_num : usb bulk-out number
  * Author : KaiYuan Chang
  * Return : HALMAC_RET_STATUS
+ * More details of status code can be found in prototype document
  */
 HALMAC_RET_STATUS
 halmac_set_bulkout_num_88xx(
@@ -390,13 +409,11 @@ halmac_set_bulkout_num_88xx(
 	VOID *pDriver_adapter = NULL;
 	PHALMAC_API pHalmac_api;
 
-	if (HALMAC_RET_SUCCESS != halmac_adapter_validate(pHalmac_adapter))
+	if (halmac_adapter_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_ADAPTER_INVALID;
 
-	if (HALMAC_RET_SUCCESS != halmac_api_validate(pHalmac_adapter))
+	if (halmac_api_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_API_INVALID;
-
-	halmac_api_record_id_88xx(pHalmac_adapter, HALMAC_API_SET_BULKOUT_NUM);
 
 	pDriver_adapter = pHalmac_adapter->pDriver_adapter;
 	pHalmac_api = (PHALMAC_API)pHalmac_adapter->pHalmac_api;
@@ -412,13 +429,14 @@ halmac_set_bulkout_num_88xx(
 }
 
 /**
- * halmac_get_usb_bulkout_id_88xx() - get bulk out id for the TX packet
- * @pHalmac_adapter
- * @halmac_buf
- * @halmac_size
- * @bulkout_id
+ * halmac_get_usb_bulkout_id_usb_88xx() - get bulk out id for the TX packet
+ * @pHalmac_adapter : the adapter of halmac
+ * @halmac_buf : tx packet, include txdesc
+ * @halmac_size : tx packet size
+ * @bulkout_id : usb bulk-out id
  * Author : KaiYuan Chang
  * Return : HALMAC_RET_STATUS
+ * More details of status code can be found in prototype document
  */
 HALMAC_RET_STATUS
 halmac_get_usb_bulkout_id_88xx(
@@ -433,25 +451,23 @@ halmac_get_usb_bulkout_id_88xx(
 	HALMAC_QUEUE_SELECT queue_sel;
 	HALMAC_DMA_MAPPING dma_mapping;
 
-	if (HALMAC_RET_SUCCESS != halmac_adapter_validate(pHalmac_adapter))
+	if (halmac_adapter_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_ADAPTER_INVALID;
 
-	if (HALMAC_RET_SUCCESS != halmac_api_validate(pHalmac_adapter))
+	if (halmac_api_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_API_INVALID;
-
-	halmac_api_record_id_88xx(pHalmac_adapter, HALMAC_API_GET_USB_BULKOUT_ID);
 
 	pDriver_adapter = pHalmac_adapter->pDriver_adapter;
 	pHalmac_api = (PHALMAC_API)pHalmac_adapter->pHalmac_api;
 
 	PLATFORM_MSG_PRINT(pDriver_adapter, HALMAC_MSG_INIT, HALMAC_DBG_TRACE, "halmac_get_usb_bulkout_id_88xx ==========>\n");
 
-	if (NULL == halmac_buf) {
+	if (halmac_buf == NULL) {
 		PLATFORM_MSG_PRINT(pDriver_adapter, HALMAC_MSG_INIT, HALMAC_DBG_ERR, "halmac_buf is NULL!!\n");
 		return HALMAC_RET_DATA_BUF_NULL;
 	}
 
-	if (0 == halmac_size) {
+	if (halmac_size == 0) {
 		PLATFORM_MSG_PRINT(pDriver_adapter, HALMAC_MSG_INIT, HALMAC_DBG_ERR, "halmac_size is 0!!\n");
 		return HALMAC_RET_DATA_SIZE_INCORRECT;
 	}
@@ -512,12 +528,13 @@ halmac_get_usb_bulkout_id_88xx(
 }
 
 /**
- * halmac_cfg_tx_agg_align_usb_not_support_88xx() -
- * @pHalmac_adapter
- * @enable
- * @align_size
+ * halmac_cfg_tx_agg_align_usb_88xx() -config sdio bus tx agg alignment
+ * @pHalmac_adapter : the adapter of halmac
+ * @enable : function enable(1)/disable(0)
+ * @align_size : sdio bus tx agg alignment size (2^n, n = 3~11)
  * Author : Soar Tu
  * Return : HALMAC_RET_STATUS
+ * More details of status code can be found in prototype document
  */
 HALMAC_RET_STATUS
 halmac_cfg_tx_agg_align_usb_not_support_88xx(
@@ -529,13 +546,11 @@ halmac_cfg_tx_agg_align_usb_not_support_88xx(
 	PHALMAC_API pHalmac_api;
 	VOID *pDriver_adapter = NULL;
 
-	if (HALMAC_RET_SUCCESS != halmac_adapter_validate(pHalmac_adapter))
+	if (halmac_adapter_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_ADAPTER_INVALID;
 
-	if (HALMAC_RET_SUCCESS != halmac_api_validate(pHalmac_adapter))
+	if (halmac_api_validate(pHalmac_adapter) != HALMAC_RET_SUCCESS)
 		return HALMAC_RET_API_INVALID;
-
-	halmac_api_record_id_88xx(pHalmac_adapter, HALMAC_API_CFG_TX_AGG_ALIGN);
 
 	pDriver_adapter = pHalmac_adapter->pDriver_adapter;
 	pHalmac_api = (PHALMAC_API)pHalmac_adapter->pHalmac_api;

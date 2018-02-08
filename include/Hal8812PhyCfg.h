@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,12 +11,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 #ifndef __INC_HAL8812PHYCFG_H__
 #define __INC_HAL8812PHYCFG_H__
 
@@ -103,11 +98,12 @@ u8 PHY_GetTxPowerIndex_8812A(
 	IN	PADAPTER			pAdapter,
 	IN	u8					RFPath,
 	IN	u8					Rate,
-	IN	CHANNEL_WIDTH		BandWidth,
-	IN	u8					Channel
+	IN	u8					BandWidth,
+	IN	u8					Channel,
+	struct txpwr_idx_comp *tic
 );
 
-u32 PHY_GetTxBBSwing_8812A(
+u32 phy_get_tx_bb_swing_8812a(
 	IN	PADAPTER	Adapter,
 	IN	BAND_TYPE	Band,
 	IN	u8			RFPath
@@ -122,25 +118,8 @@ PHY_SetTxPowerIndex_8812A(
 );
 
 /*
- * Switch bandwidth for 8192S
- *   */
-VOID
-PHY_SetBWMode8812(
-	IN	PADAPTER			pAdapter,
-	IN	CHANNEL_WIDTH		Bandwidth,
-	IN	u8					Offset
-);
-
-/*
  * channel switch related funciton
  *   */
-VOID
-PHY_SwChnl8812(
-	IN	PADAPTER	Adapter,
-	IN	u8			channel
-);
-
-
 VOID
 PHY_SetSwChnlBWMode8812(
 	IN	PADAPTER			Adapter,
@@ -155,9 +134,9 @@ PHY_SetSwChnlBWMode8812(
  *   */
 
 VOID
-PHY_SetRFPathSwitch_8812A(
+phy_set_rf_path_switch_8812a(
 	IN	PADAPTER	pAdapter,
-	IN	BOOLEAN		bMain
+	IN	bool		bMain
 );
 
 /*--------------------------Exported Function prototype---------------------*/

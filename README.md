@@ -43,4 +43,33 @@ Updates for wireless-ext/cfg80211  are not accepted.
 
   
 **BUGS**  
- 
+
+ #### step by step install for RTL8812bu on Ubuntu 18.04 (development branch)
+- install git
+```
+sudo apt install git
+```
+- install gcc
+```
+sudo apt install gcc
+```
+- install libelf-dev
+```
+sudo apt install libelf-dev
+```
+- download this repo
+```
+git clone https://github.com/jackfan108/rtl8822bu.git
+```
+- run
+```
+make
+```
+- (potentially remove `.cache.mk` with `rm .cache.mk` in case you failed `make`)
+- run
+```
+sudo make install
+sudo cp 88x2bu.ko /lib/modules/$(uname -r)/kernel/drivers/net/wireless
+sudo depmod
+```
+- restart your computer and you should see wifi networks :D

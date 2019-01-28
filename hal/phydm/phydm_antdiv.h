@@ -156,7 +156,7 @@ struct sw_antenna_switch {
 	u8		reset_idx;
 	u8		train_time;
 	u8		train_time_flag; /*base on RSSI difference between two antennas*/
-	struct timer_list	phydm_sw_antenna_switch_timer;
+	_timer		phydm_sw_antenna_switch_timer;
 	u32		pkt_cnt_sw_ant_div_by_ctrl_frame;
 	boolean		is_sw_ant_div_by_ctrl_frame;
 
@@ -438,7 +438,7 @@ odm_update_rx_idle_ant_8723d(
 #if (DM_ODM_SUPPORT_TYPE == ODM_WIN)
 void
 odm_sw_antdiv_callback(
-	struct timer_list		*timer
+	_timer		*timer
 );
 
 void

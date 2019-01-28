@@ -84,7 +84,7 @@ struct _DYNAMIC_RX_PATH_ {
 	RT_WORK_ITEM	phydm_dynamic_rx_path_workitem;
 #endif
 #endif
-	struct timer_list		phydm_dynamic_rx_path_timer;
+	_timer		phydm_dynamic_rx_path_timer;
 
 };
 
@@ -105,7 +105,7 @@ phydm_dynamic_rx_path(
 #if (DM_ODM_SUPPORT_TYPE == ODM_WIN)
 void
 phydm_dynamic_rx_path_callback(
-	struct timer_list		*timer
+	_timer		*timer
 );
 
 void

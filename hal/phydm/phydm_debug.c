@@ -920,7 +920,7 @@ void phydm_sbd_check(
 #endif
 
 void phydm_sbd_callback(
-	struct timer_list		*timer
+	_timer		*timer
 )
 {
 #ifdef CONFIG_PHYDM_DEBUG_FUNCTION

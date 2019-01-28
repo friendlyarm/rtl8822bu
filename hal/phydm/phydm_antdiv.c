@@ -3035,7 +3035,7 @@ odm_s0s1_sw_ant_div(
 #if (DM_ODM_SUPPORT_TYPE == ODM_WIN)
 void
 odm_sw_antdiv_callback(
-	struct timer_list		*timer
+	_timer 		*timer
 )
 {
 	void		*adapter = (void *)timer->Adapter;

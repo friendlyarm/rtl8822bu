@@ -852,14 +852,14 @@ struct	phydm_iot_center {
 
 /*=== PHYDM Timer ========================================== (start)*/
 
-	struct timer_list	mpt_dig_timer;	/*MPT DIG timer*/
-	struct timer_list	path_div_switch_timer;
-	struct timer_list	cck_path_diversity_timer;/*2011.09.27 add for path Diversity*/
-	struct timer_list	fast_ant_training_timer;
+	_timer			mpt_dig_timer;	/*MPT DIG timer*/
+	_timer			path_div_switch_timer;
+	_timer			cck_path_diversity_timer;/*2011.09.27 add for path Diversity*/
+	_timer			fast_ant_training_timer;
 #ifdef ODM_EVM_ENHANCE_ANTDIV
-	struct timer_list	evm_fast_ant_training_timer;
+	_timer			evm_fast_ant_training_timer;
 #endif
-	struct timer_list	sbdcnt_timer;
+	_timer			sbdcnt_timer;
 
 
 /*=== PHYDM Workitem ======================================= (start)*/

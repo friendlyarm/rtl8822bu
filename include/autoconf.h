@@ -19,8 +19,8 @@
  * Public  General Config
  */
 #define AUTOCONF_INCLUDED
-#define RTL871X_MODULE_NAME "88x2BU"
-#define DRV_NAME "rtl88x2bu"
+#define RTL871X_MODULE_NAME "8822BU"
+#define DRV_NAME "rtl8822bu"
 
 /* Set CONFIG_RTL8822B from Makefile */
 #ifndef CONFIG_RTL8822B
@@ -127,7 +127,7 @@
 /*#else*/	/* CONFIG_MP_INCLUDED */
 
 /*#endif*/	/* CONFIG_MP_INCLUDED */
-
+#define CONFIG_CONCURRENT_MODE 1
 #define CONFIG_AP_MODE	1
 #ifdef CONFIG_AP_MODE
 	/* #define CONFIG_INTERRUPT_BASED_TXBCN */ /* Tx Beacon when driver BCN_OK ,BCN_ERR interrupt occurs */

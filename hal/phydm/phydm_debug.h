@@ -397,7 +397,7 @@ void phydm_sbd_check(
 );
 
 void phydm_sbd_callback(
-	struct timer_list		*timer
+	_timer		*timer
 );
 
 void phydm_sbd_workitem_callback(

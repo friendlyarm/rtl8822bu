@@ -249,7 +249,7 @@ struct phydm_lna_sat_info_struct {
 	u32		check_time;
 	boolean		pre_sat_status;
 	boolean		cur_sat_status;
-	struct timer_list phydm_lna_sat_chk_timer;
+	_timer		phydm_lna_sat_chk_timer;
 	u32		cur_timer_check_cnt;
 	u32		pre_timer_check_cnt;
 };

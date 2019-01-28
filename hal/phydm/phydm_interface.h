@@ -352,14 +352,14 @@ ODM_sleep_us(u32	us);
 void
 odm_set_timer(
 	struct dm_struct		*dm,
-	struct timer_list		*timer,
+	_timer			*timer,
 	u32			ms_delay
 );
 
 void
 odm_initialize_timer(
 	struct dm_struct			*dm,
-	struct timer_list			*timer,
+	_timer					*timer,
 	void	*call_back_func,
 	void				*context,
 	const char			*sz_id
@@ -368,13 +368,13 @@ odm_initialize_timer(
 void
 odm_cancel_timer(
 	struct dm_struct		*dm,
-	struct timer_list		*timer
+	_timer				*timer
 );
 
 void
 odm_release_timer(
 	struct dm_struct		*dm,
-	struct timer_list		*timer
+	_timer				*timer
 );
 
 /*ODM FW relative API.*/

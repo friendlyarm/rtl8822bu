@@ -179,7 +179,7 @@ phydm_dynamic_rx_path(
 #if (DM_ODM_SUPPORT_TYPE == ODM_WIN)
 void
 phydm_dynamic_rx_path_callback(
-	struct timer_list		*timer
+	_timer		*timer
 )
 {
 	void		*adapter = (void *)timer->adapter;

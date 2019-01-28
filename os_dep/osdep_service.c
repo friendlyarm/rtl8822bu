@@ -73,6 +73,18 @@ u32 rtw_atoi(u8 *s)
 
 }
 
+#ifdef PLATFORM_LINUX
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+void compat_timer_wrapper(struct timer_list *compat)
+{
+	_timer *ptimer = container_of(compat, _timer, compat);
+
+	if (ptimer->function)
+		ptimer->function(ptimer->data);
+}
+#endif
+#endif
+
 inline void *_rtw_vmalloc(u32 sz)
 {
 	void *pbuf;

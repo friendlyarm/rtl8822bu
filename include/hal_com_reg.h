@@ -209,8 +209,6 @@
 #define REG_DBI_FLAG					0x0352	/* Backdoor REG for Access Configuration */
 #define REG_MDIO					0x0354	/* MDIO for Access PCIE PHY */
 #define REG_DBG_SEL					0x0360	/* Debug Selection Register */
-#define REG_PCIE_HRPWM					0x0361	/* PCIe RPWM */
-#define REG_PCIE_HCPWM					0x0363	/* PCIe CPWM */
 #define REG_WATCH_DOG					0x0368
 #define REG_RX_RXBD_NUM					0x0382
 
@@ -315,6 +313,11 @@
 #define REG_MACID_SLEEP	0x04D4
 
 #define REG_NQOS_SEQ					0x04DC
+#define REG_HW_SEQ0						0x04D8
+#define REG_HW_SEQ1						0x04DA
+#define REG_HW_SEQ2						0x04DC
+#define REG_HW_SEQ3						0x04DE
+
 #define REG_QOS_SEQ					0x04DE
 #define REG_NEED_CPU_HANDLE			0x04E0
 #define REG_PKT_LOSE_RPT				0x04E1
@@ -381,6 +384,7 @@
 #define REG_PSTIMER						0x0580
 #define REG_TIMER0						0x0584
 #define REG_TIMER1						0x0588
+#define REG_HIQ_NO_LMT_EN				0x05A7
 #define REG_ACMHWCTRL					0x05C0
 #define REG_NOA_DESC_SEL				0x05CF
 #define REG_NOA_DESC_DURATION		0x05E0
@@ -706,6 +710,7 @@ Default: 00b.
 **      REG_CCK_CHECK						(offset 0x454)
 ------------------------------------------------------------------------------*/
 #define BIT_BCN_PORT_SEL		BIT(5)
+#define BIT_EN_BCN_PKT_REL		BIT(6)
 
 #endif /* RTW_HALMAC */
 
@@ -1374,7 +1379,8 @@ Current IOREG MAP
 #define QUEUE_LOW				1
 #define QUEUE_NORMAL			2
 #define QUEUE_HIGH				3
-
+#define QUEUE_EXTRA_1			4
+#define QUEUE_EXTRA_2			5
 
 /* 2 TRXFF_BNDY */
 
@@ -1479,6 +1485,12 @@ Current IOREG MAP
 #define	RETRY_LIMIT_SHORT_SHIFT			8
 #define	RETRY_LIMIT_LONG_SHIFT			0
 
+#define	RL_VAL_AP					7
+#ifdef CONFIG_RTW_CUSTOMIZE_RLSTA
+#define	RL_VAL_STA					CONFIG_RTW_CUSTOMIZE_RLSTA
+#else
+#define	RL_VAL_STA					0x30
+#endif
 /* -----------------------------------------------------
  *
  *	0x0500h ~ 0x05FFh	EDCA Configuration
@@ -1513,12 +1525,12 @@ Current IOREG MAP
 
 /* 2 ACMHWCTRL */
 #define AcmHw_HwEn				BIT(0)
-#define AcmHw_BeqEn			BIT(1)
+#define AcmHw_VoqEn			BIT(1)
 #define AcmHw_ViqEn				BIT(2)
-#define AcmHw_VoqEn			BIT(3)
-#define AcmHw_BeqStatus		BIT(4)
-#define AcmHw_ViqStatus			BIT(5)
-#define AcmHw_VoqStatus		BIT(6)
+#define AcmHw_BeqEn			BIT(3)
+#define AcmHw_VoqStatus		BIT(5)
+#define AcmHw_ViqStatus			BIT(6)
+#define AcmHw_BeqStatus		BIT(7)
 
 /* 2 */ /* REG_DUAL_TSF_RST (0x553) */
 #define DUAL_TSF_RST_P2P		BIT(4)
@@ -1640,6 +1652,7 @@ Current IOREG MAP
 #define SDIO_MAX_RX_QUEUE			1
 
 #define SDIO_REG_TX_CTRL			0x0000 /* SDIO Tx Control */
+#define SDIO_REG_TIMEOUT			0x0002/*SDIO status timeout*/
 #define SDIO_REG_HIMR				0x0014 /* SDIO Host Interrupt Mask */
 #define SDIO_REG_HISR				0x0018 /* SDIO Host Interrupt Service Routine */
 #define SDIO_REG_HCPWM			0x0019 /* HCI Current Power Mode */
@@ -1800,7 +1813,11 @@ Current IOREG MAP
  * General definitions
  * ******************************************************** */
 
-#define LAST_ENTRY_OF_TX_PKT_BUFFER_8188E(__Adapter)	   (IS_VENDOR_8188E_I_CUT_SERIES(__Adapter) ? 255 : 175)
+#ifdef CONFIG_USB_HCI
+	#define LAST_ENTRY_OF_TX_PKT_BUFFER_8188E(__Adapter)	(175)
+#else
+	#define LAST_ENTRY_OF_TX_PKT_BUFFER_8188E(__Adapter)	(IS_VENDOR_8188E_I_CUT_SERIES(__Adapter) ? 255 : 175)
+#endif
 #define LAST_ENTRY_OF_TX_PKT_BUFFER_8812			255
 #define LAST_ENTRY_OF_TX_PKT_BUFFER_8723B		255
 #define LAST_ENTRY_OF_TX_PKT_BUFFER_8192C		255
@@ -1808,7 +1825,8 @@ Current IOREG MAP
 #define LAST_ENTRY_OF_TX_PKT_BUFFER_DUAL_MAC	127
 #define LAST_ENTRY_OF_TX_PKT_BUFFER_8188F		255
 #define LAST_ENTRY_OF_TX_PKT_BUFFER_8723D		255
-
+#define LAST_ENTRY_OF_TX_PKT_BUFFER_8710B		255
+#define LAST_ENTRY_OF_TX_PKT_BUFFER_8192F		255
 #define POLLING_LLT_THRESHOLD				20
 #if defined(CONFIG_RTL8723B) && defined(CONFIG_PCI_HCI)
 	#define POLLING_READY_TIMEOUT_COUNT		6000

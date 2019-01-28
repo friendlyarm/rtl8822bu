@@ -16,7 +16,9 @@
 #define __RTW_RF_H_
 
 #define NumRates	(13)
-
+#define	B_MODE_RATE_NUM	(4)
+#define	G_MODE_RATE_NUM	(8)
+#define	G_MODE_BASIC_RATE_NUM	(3)
 /* slot time for 11g */
 #define SHORT_SLOT_TIME					9
 #define NON_SHORT_SLOT_TIME				20
@@ -79,13 +81,6 @@ enum	_REG_PREAMBLE_MODE {
 	PREAMBLE_SHORT	= 3,
 };
 
-typedef enum _RF_PATH {
-	RF_PATH_A = 0,
-	RF_PATH_B = 1,
-	RF_PATH_C = 2,
-	RF_PATH_D = 3,
-} RF_PATH, *PRF_PATH;
-
 #define rf_path_char(path) (((path) >= RF_PATH_MAX) ? 'X' : 'A' + (path))
 
 /* Bandwidth Offset */
@@ -106,22 +101,12 @@ extern const char *const _band_str[];
 extern const u8 _band_to_band_cap[];
 #define band_to_band_cap(band) (((band) >= BAND_MAX) ? _band_to_band_cap[BAND_MAX] : _band_to_band_cap[(band)])
 
-/* Represent Channel Width in HT Capabilities
- *   */
-typedef enum _CHANNEL_WIDTH {
-	CHANNEL_WIDTH_20 = 0,
-	CHANNEL_WIDTH_40 = 1,
-	CHANNEL_WIDTH_80 = 2,
-	CHANNEL_WIDTH_160 = 3,
-	CHANNEL_WIDTH_80_80 = 4,
-	CHANNEL_WIDTH_MAX = 5,
-} CHANNEL_WIDTH, *PCHANNEL_WIDTH;
 
 extern const char *const _ch_width_str[];
-#define ch_width_str(bw) (((bw) >= CHANNEL_WIDTH_MAX) ? _ch_width_str[CHANNEL_WIDTH_MAX] : _ch_width_str[(bw)])
+#define ch_width_str(bw) (((bw) < CHANNEL_WIDTH_MAX) ? _ch_width_str[(bw)] : "CHANNEL_WIDTH_MAX")
 
 extern const u8 _ch_width_to_bw_cap[];
-#define ch_width_to_bw_cap(bw) (((bw) >= CHANNEL_WIDTH_MAX) ? _ch_width_to_bw_cap[CHANNEL_WIDTH_MAX] : _ch_width_to_bw_cap[(bw)])
+#define ch_width_to_bw_cap(bw) (((bw) < CHANNEL_WIDTH_MAX) ? _ch_width_to_bw_cap[(bw)] : 0)
 
 /*
  * Represent Extention Channel Offset in HT Capabilities
@@ -154,21 +139,7 @@ typedef enum _PROTECTION_MODE {
 	PROTECTION_MODE_FORCE_DISABLE = 2,
 } PROTECTION_MODE, *PPROTECTION_MODE;
 
-typedef	enum _RT_RF_TYPE_DEFINITION {
-	RF_1T2R = 0,
-	RF_2T4R = 1,
-	RF_2T2R = 2,
-	RF_1T1R = 3,
-	RF_2T2R_GREEN = 4,
-	RF_2T3R = 5,
-	RF_3T3R = 6,
-	RF_3T4R	= 7,
-	RF_4T4R	= 8,
-
-	RF_TYPE_AUTO,
-} RT_RF_TYPE_DEF_E;
-
-#define RF_TYPE_VALID(rf_type) (rf_type < RF_TYPE_AUTO)
+#define RF_TYPE_VALID(rf_type) (rf_type < RF_TYPE_MAX)
 
 extern const u8 _rf_type_to_rf_tx_cnt[];
 #define rf_type_to_rf_tx_cnt(rf_type) (RF_TYPE_VALID(rf_type) ? _rf_type_to_rf_tx_cnt[rf_type] : 0)
@@ -180,16 +151,17 @@ int rtw_ch2freq(int chan);
 int rtw_freq2ch(int freq);
 bool rtw_chbw_to_freq_range(u8 ch, u8 bw, u8 offset, u32 *hi, u32 *lo);
 
-#define RTW_MODULE_RTL8821AE_HMC_M2		BIT0 /* RTL8821AE(HMC + M.2) */
-#define RTW_MODULE_RTL8821AU			BIT1 /* RTL8821AU */
-#define RTW_MODULE_RTL8812AENF_NGFF		BIT2 /* RTL8812AENF(8812AE+8761)_NGFF */
-#define RTW_MODULE_RTL8812AEBT_HMC		BIT3 /* RTL8812AEBT(8812AE+8761)_HMC */
-#define RTW_MODULE_RTL8188EE_HMC_M2		BIT4 /* RTL8188EE(HMC + M.2) */
-#define RTW_MODULE_RTL8723BE_HMC_M2		BIT5 /* RTL8723BE(HMC + M.2) */
-#define RTW_MODULE_RTL8723BS_NGFF1216	BIT6 /* RTL8723BS(NGFF1216) */
-#define RTW_MODULE_RTL8192EEBT_HMC_M2	BIT7 /* RTL8192EEBT(8192EE+8761AU)_(HMC + M.2) */
-#define RTW_MODULE_RTL8723DE_NGFF1630	BIT8 /* RTL8723DE(NGFF1630) */
-#define RTW_MODULE_RTL8822BE			BIT9 /* RTL8822BE */
+#define RTW_MODULE_RTL8821AE_HMC_M2		BIT0	/* RTL8821AE(HMC + M.2) */
+#define RTW_MODULE_RTL8821AU			BIT1	/* RTL8821AU */
+#define RTW_MODULE_RTL8812AENF_NGFF		BIT2	/* RTL8812AENF(8812AE+8761)_NGFF */
+#define RTW_MODULE_RTL8812AEBT_HMC		BIT3	/* RTL8812AEBT(8812AE+8761)_HMC */
+#define RTW_MODULE_RTL8188EE_HMC_M2		BIT4	/* RTL8188EE(HMC + M.2) */
+#define RTW_MODULE_RTL8723BE_HMC_M2		BIT5	/* RTL8723BE(HMC + M.2) */
+#define RTW_MODULE_RTL8723BS_NGFF1216	BIT6	/* RTL8723BS(NGFF1216) */
+#define RTW_MODULE_RTL8192EEBT_HMC_M2	BIT7	/* RTL8192EEBT(8192EE+8761AU)_(HMC + M.2) */
+#define RTW_MODULE_RTL8723DE_NGFF1630	BIT8	/* RTL8723DE(NGFF1630) */
+#define RTW_MODULE_RTL8822BE			BIT9	/* RTL8822BE */
+#define RTW_MODULE_RTL8821CE			BIT10	/* RTL8821CE */
 
 #define IS_ALPHA2_NO_SPECIFIED(_alpha2) ((*((u16 *)(_alpha2))) == 0xFFFF)
 
@@ -227,7 +199,9 @@ typedef enum _REGULATION_TXPWR_LMT {
 	TXPWR_LMT_ETSI = 3,
 	TXPWR_LMT_IC = 4,
 	TXPWR_LMT_KCC = 5,
-	TXPWR_LMT_WW = 6, /* smallest of all available limit, keep last */
+	TXPWR_LMT_ACMA = 6,
+	TXPWR_LMT_CHILE = 7,
+	TXPWR_LMT_WW = 8, /* smallest of all available limit, keep last */
 } REGULATION_TXPWR_LMT;
 
 extern const char *const _regd_str[];

@@ -23,6 +23,26 @@
 
 #endif
 
+#ifdef CONFIG_RTW_REPEATER_SON
+	#ifndef CONFIG_AP
+		#define CONFIG_AP
+	#endif
+	#ifndef CONFIG_CONCURRENT_MODE
+		#define CONFIG_CONCURRENT_MODE
+	#endif
+	#ifndef CONFIG_BR_EXT
+		#define CONFIG_BR_EXT
+	#endif
+	#ifndef CONFIG_RTW_REPEATER_SON_ID
+		#define CONFIG_RTW_REPEATER_SON_ID			0x02040608
+	#endif
+	//#define CONFIG_RTW_REPEATER_SON_ROOT
+	#ifndef CONFIG_RTW_REPEATER_SON_ROOT
+		#define CONFIG_LAYER2_ROAMING_ACTIVE
+	#endif
+	#undef CONFIG_POWER_SAVING
+#endif
+
 #if defined(CONFIG_MCC_MODE) && (!defined(CONFIG_CONCURRENT_MODE))
 
 	#error "Enable CONCURRENT_MODE before enable MCC MODE\n"
@@ -100,6 +120,29 @@
 	#undef CONFIG_DFS_MASTER
 #endif
 
+#ifdef CONFIG_RTW_MESH
+	#ifndef CONFIG_RTW_MESH_OFFCH_CAND
+	#define CONFIG_RTW_MESH_OFFCH_CAND 1
+	#endif
+
+	#ifndef CONFIG_RTW_MPM_TX_IES_SYNC_BSS
+	#define CONFIG_RTW_MPM_TX_IES_SYNC_BSS 1
+	#endif
+	#if CONFIG_RTW_MPM_TX_IES_SYNC_BSS
+		#ifndef CONFIG_RTW_MESH_AEK
+		#define CONFIG_RTW_MESH_AEK
+		#endif
+	#endif
+
+	#ifndef CONFIG_RTW_MESH_DATA_BMC_TO_UC
+	#define CONFIG_RTW_MESH_DATA_BMC_TO_UC 1
+	#endif
+#endif
+
+#if !defined(CONFIG_SCAN_BACKOP) && defined(CONFIG_AP_MODE)
+#define CONFIG_SCAN_BACKOP
+#endif
+
 #define RTW_SCAN_SPARSE_MIRACAST 1
 #define RTW_SCAN_SPARSE_BG 0
 #define RTW_SCAN_SPARSE_ROAMING_ACTIVE 1
@@ -108,24 +151,12 @@
 	#define CONFIG_RTW_HIQ_FILTER 1
 #endif
 
-#ifndef CONFIG_RTW_FORCE_IGI_LB
-	#define CONFIG_RTW_FORCE_IGI_LB 0
-#endif
-
 #ifndef CONFIG_RTW_ADAPTIVITY_EN
 	#define CONFIG_RTW_ADAPTIVITY_EN 0
 #endif
 
 #ifndef CONFIG_RTW_ADAPTIVITY_MODE
 	#define CONFIG_RTW_ADAPTIVITY_MODE 0
-#endif
-
-#ifndef CONFIG_RTW_ADAPTIVITY_DML
-	#define CONFIG_RTW_ADAPTIVITY_DML 0
-#endif
-
-#ifndef CONFIG_RTW_ADAPTIVITY_DC_BACKOFF
-	#define CONFIG_RTW_ADAPTIVITY_DC_BACKOFF 2
 #endif
 
 #ifndef CONFIG_RTW_ADAPTIVITY_TH_L2H_INI
@@ -149,6 +180,10 @@
 #endif
 #ifndef CONFIG_TXPWR_LIMIT_EN
 #define CONFIG_TXPWR_LIMIT_EN 2 /* by efuse */
+#endif
+
+#ifndef CONFIG_RTW_CHPLAN
+#define CONFIG_RTW_CHPLAN 0xFF /* RTW_CHPLAN_UNSPECIFIED */
 #endif
 
 /* compatible with old fashion configuration */
@@ -179,6 +214,15 @@
 #if !defined(CONFIG_TXPWR_LIMIT) && CONFIG_TXPWR_LIMIT_EN
 	#define CONFIG_TXPWR_LIMIT
 #endif
+
+#ifdef CONFIG_RTW_IPCAM_APPLICATION
+	#undef CONFIG_TXPWR_BY_RATE_EN
+	#define CONFIG_TXPWR_BY_RATE_EN 1
+	#define CONFIG_RTW_CUSTOMIZE_BEEDCA		0x0000431C
+	#define CONFIG_RTW_CUSTOMIZE_BWMODE		0x00
+	#define CONFIG_RTW_CUSTOMIZE_RLSTA		0x7
+#endif
+
 
 #ifndef CONFIG_RTW_RX_AMPDU_SZ_LIMIT_1SS
 	#define CONFIG_RTW_RX_AMPDU_SZ_LIMIT_1SS {0xFF, 0xFF, 0xFF, 0xFF}
@@ -322,4 +366,33 @@
 	#define RTW_RX_AGGREGATION
 #endif /* CONFIG_SDIO_HCI || CONFIG_USB_RX_AGGREGATION */
 
+#ifdef CONFIG_RTW_HOSTAPD_ACS
+	#if defined(CONFIG_RTL8812A) || defined(CONFIG_RTL8821A) || defined(CONFIG_RTL8814A)
+		#ifndef CONFIG_FIND_BEST_CHANNEL
+			#define CONFIG_FIND_BEST_CHANNEL
+		#endif
+	#else
+		#ifdef CONFIG_FIND_BEST_CHANNEL
+			#undef CONFIG_FIND_BEST_CHANNEL
+		#endif
+		#ifndef CONFIG_RTW_ACS
+			#define CONFIG_RTW_ACS
+		#endif
+		#ifndef CONFIG_BACKGROUND_NOISE_MONITOR
+			#define CONFIG_BACKGROUND_NOISE_MONITOR
+		#endif
+	#endif
+#endif
+
+#ifdef CONFIG_RTW_80211K
+	#ifndef CONFIG_RTW_ACS
+		#define CONFIG_RTW_ACS
+	#endif
+#endif /*CONFIG_RTW_80211K*/
+
+#ifdef DBG_CONFIG_ERROR_RESET
+#ifndef CONFIG_IPS
+#define CONFIG_IPS
+#endif
+#endif
 #endif /* __DRV_CONF_H__ */

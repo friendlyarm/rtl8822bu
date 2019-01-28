@@ -49,6 +49,12 @@ void rtl8822b_init_hal_spec(PADAPTER adapter)
 			    ;
 
 	hal_spec->hci_type = 0;
+
+	rtw_macid_ctl_init_sleep_reg(adapter_to_macidctl(adapter)
+		, REG_MACID_SLEEP_8822B
+		, REG_MACID_SLEEP1_8822B
+		, REG_MACID_SLEEP2_8822B
+		, REG_MACID_SLEEP3_8822B);
 }
 
 u32 rtl8822b_power_on(PADAPTER adapter)
@@ -147,14 +153,14 @@ u8 rtl8822b_hal_init(PADAPTER adapter)
 		return _FALSE;
 	}
 
-	
+
 
 	RTW_INFO("%s Download Firmware from %s success\n", __FUNCTION__, (fw_bin) ? "file" : "array");
 	RTW_INFO("%s FW Version:%d SubVersion:%d FW size:%d\n", "NIC",
 		hal->firmware_version, hal->firmware_sub_version, hal->firmware_size);
 
 	/* Sync driver status with hardware setting */
-	rtl8822b_rcr_get(adapter, NULL);
+	rtw_hal_get_hwreg(adapter, HW_VAR_RCR, NULL);
 	hal->bFWReady = _TRUE;
 	hal->fw_ractrl = _TRUE;
 
@@ -208,8 +214,9 @@ void rtl8822b_init_misc(PADAPTER adapter)
 			if (iface) {
 				iface->registrypriv.wireless_mode = WIRELESS_MODE_5G;
 				iface->registrypriv.channel = 149;
-
+#ifdef CONFIG_80211N_HT
 				iface->registrypriv.stbc_cap &= ~(BIT0 | BIT4);
+#endif /* CONFIG_80211N_HT */
 			}
 		}
 	}
@@ -223,7 +230,7 @@ void rtl8822b_init_misc(PADAPTER adapter)
 	invalidate_cam_all(adapter);
 
 	/* check RCR/ICV bit */
-	rtl8822b_rcr_clear(adapter, BIT_ACRC32_8822B | BIT_AICV_8822B);
+	rtw_hal_rcr_clear(adapter, BIT_ACRC32_8822B | BIT_AICV_8822B);
 
 	/* clear rx ctrl frame */
 	rtw_write16(adapter, REG_RXFLTMAP1_8822B, 0);
@@ -255,15 +262,21 @@ u32 rtl8822b_init(PADAPTER adapter)
 	rtl8822b_phy_bf_init(adapter);
 #endif
 
+#ifdef CONFIG_FW_MULTI_PORT_SUPPORT
+	/*HW / FW init*/
+	rtw_hal_set_default_port_id_cmd(adapter, 0);
+#endif
+
 #ifdef CONFIG_BT_COEXIST
 	/* Init BT hw config. */
-	if (_TRUE == hal->EEPROMBluetoothCoexist)
+	if (_TRUE == hal->EEPROMBluetoothCoexist) {
 		rtw_btcoex_HAL_Initialize(adapter, _FALSE);
-	else
-		rtw_btcoex_wifionly_hw_config(adapter);
-#else /* CONFIG_BT_COEXIST */
-	rtw_btcoex_wifionly_hw_config(adapter);
+		#ifdef CONFIG_FW_MULTI_PORT_SUPPORT
+		rtw_hal_set_wifi_btc_port_id_cmd(adapter);
+		#endif
+	} else
 #endif /* CONFIG_BT_COEXIST */
+		rtw_btcoex_wifionly_hw_config(adapter);
 
 	rtl8822b_init_misc(adapter);
 
@@ -298,9 +311,6 @@ void rtl8822b_init_default_value(PADAPTER adapter)
 
 	hal = GET_HAL_DATA(adapter);
 
-	if (adapter->registrypriv.wireless_mode == WIRELESS_MODE_MAX)
-		adapter->registrypriv.wireless_mode = WIRELESS_MODE_24G | WIRELESS_MODE_5G;
-
 	/* init default value */
 	hal->fw_ractrl = _FALSE;
 
@@ -309,10 +319,6 @@ void rtl8822b_init_default_value(PADAPTER adapter)
 
 	/* init phydm default value */
 	hal->bIQKInitialized = _FALSE;
-	hal->odmpriv.rf_calibrate_info.tm_trigger = 0; /* for IQK */
-	hal->odmpriv.rf_calibrate_info.thermal_value_hp_index = 0;
-	for (i = 0; i < HP_THERMAL_NUM; i++)
-		hal->odmpriv.rf_calibrate_info.thermal_value_hp[i] = 0;
 
 	/* init Efuse variables */
 	hal->EfuseUsedBytes = 0;

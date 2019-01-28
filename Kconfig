@@ -3,4 +3,3 @@ config RTL8822BU
 	depends on USB
 	---help---
 	  Help message of RTL8822BU
-

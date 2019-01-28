@@ -126,31 +126,18 @@ void sreset_restore_security_station(_adapter *padapter)
 		rtw_hal_set_hwreg(padapter, HW_VAR_SEC_CFG, (u8 *)(&val8));
 	}
 
-#if 0
-	if ((padapter->securitypriv.dot11PrivacyAlgrthm == _WEP40_) ||
-	    (padapter->securitypriv.dot11PrivacyAlgrthm == _WEP104_)) {
-
-		for (EntryId = 0; EntryId < 4; EntryId++) {
-			if (EntryId == psecuritypriv->dot11PrivacyKeyIndex)
-				rtw_set_key(padapter, &padapter->securitypriv, EntryId, 1, _FALSE);
-			else
-				rtw_set_key(padapter, &padapter->securitypriv, EntryId, 0, _FALSE);
+	if ((padapter->securitypriv.dot11PrivacyAlgrthm == _TKIP_) ||
+	    (padapter->securitypriv.dot11PrivacyAlgrthm == _AES_)) {
+		psta = rtw_get_stainfo(pstapriv, get_bssid(mlmepriv));
+		if (psta == NULL) {
+			/* DEBUG_ERR( ("Set wpa_set_encryption: Obtain Sta_info fail\n")); */
+		} else {
+			/* pairwise key */
+			rtw_setstakey_cmd(padapter, psta, UNICAST_KEY, _FALSE);
+			/* group key */
+			rtw_set_key(padapter, &padapter->securitypriv, padapter->securitypriv.dot118021XGrpKeyid, 0, _FALSE);
 		}
-
-	} else
-#endif
-		if ((padapter->securitypriv.dot11PrivacyAlgrthm == _TKIP_) ||
-		    (padapter->securitypriv.dot11PrivacyAlgrthm == _AES_)) {
-			psta = rtw_get_stainfo(pstapriv, get_bssid(mlmepriv));
-			if (psta == NULL) {
-				/* DEBUG_ERR( ("Set wpa_set_encryption: Obtain Sta_info fail\n")); */
-			} else {
-				/* pairwise key */
-				rtw_setstakey_cmd(padapter, psta, UNICAST_KEY, _FALSE);
-				/* group key */
-				rtw_set_key(padapter, &padapter->securitypriv, padapter->securitypriv.dot118021XGrpKeyid, 0, _FALSE);
-			}
-		}
+	}
 }
 
 void sreset_restore_network_station(_adapter *padapter)
@@ -179,13 +166,14 @@ void sreset_restore_network_station(_adapter *padapter)
 	}
 #endif
 
-	rtw_setopmode_cmd(padapter, Ndis802_11Infrastructure, _FALSE);
+	rtw_setopmode_cmd(padapter, Ndis802_11Infrastructure, RTW_CMDF_DIRECTLY);
 
 	{
 		u8 threshold;
 #ifdef CONFIG_USB_HCI
 		/* TH=1 => means that invalidate usb rx aggregation */
 		/* TH=0 => means that validate usb rx aggregation, use init value. */
+#ifdef CONFIG_80211N_HT
 		if (mlmepriv->htpriv.ht_option) {
 			if (padapter->registrypriv.wifi_spec == 1)
 				threshold = 1;
@@ -196,6 +184,7 @@ void sreset_restore_network_station(_adapter *padapter)
 			threshold = 1;
 			rtw_hal_set_hwreg(padapter, HW_VAR_RXDMA_AGG_PG_TH, (u8 *)(&threshold));
 		}
+#endif /* CONFIG_80211N_HT */
 #endif
 	}
 
@@ -214,6 +203,7 @@ void sreset_restore_network_station(_adapter *padapter)
 	{
 		u8	join_type = 0;
 		rtw_hal_set_hwreg(padapter, HW_VAR_MLME_JOIN, (u8 *)(&join_type));
+		rtw_hal_rcr_set_chk_bssid(padapter, MLME_STA_CONNECTING);
 	}
 
 	Set_MSR(padapter, (pmlmeinfo->state & 0x3));
@@ -235,8 +225,8 @@ void sreset_restore_network_status(_adapter *padapter)
 	if (check_fwstate(mlmepriv, WIFI_STATION_STATE)) {
 		RTW_INFO(FUNC_ADPT_FMT" fwstate:0x%08x - WIFI_STATION_STATE\n", FUNC_ADPT_ARG(padapter), get_fwstate(mlmepriv));
 		sreset_restore_network_station(padapter);
-	} else if (check_fwstate(mlmepriv, WIFI_AP_STATE)) {
-		RTW_INFO(FUNC_ADPT_FMT" fwstate:0x%08x - WIFI_AP_STATE\n", FUNC_ADPT_ARG(padapter), get_fwstate(mlmepriv));
+	} else if (MLME_IS_AP(padapter) || MLME_IS_MESH(padapter)) {
+		RTW_INFO(FUNC_ADPT_FMT" %s\n", FUNC_ADPT_ARG(padapter), MLME_IS_AP(padapter) ? "AP" : "MESH");
 		rtw_ap_restore_network(padapter);
 	} else if (check_fwstate(mlmepriv, WIFI_ADHOC_STATE))
 		RTW_INFO(FUNC_ADPT_FMT" fwstate:0x%08x - WIFI_ADHOC_STATE\n", FUNC_ADPT_ARG(padapter), get_fwstate(mlmepriv));
@@ -306,7 +296,7 @@ void sreset_reset(_adapter *padapter)
 	struct mlme_priv	*pmlmepriv = &(padapter->mlmepriv);
 	struct xmit_priv	*pxmitpriv = &padapter->xmitpriv;
 	_irqL irqL;
-	u32 start = rtw_get_current_time();
+	systime start = rtw_get_current_time();
 	struct dvobj_priv *psdpriv = padapter->dvobj;
 	struct debug_priv *pdbgpriv = &psdpriv->drv_dbg;
 
@@ -337,5 +327,8 @@ void sreset_reset(_adapter *padapter)
 
 	RTW_INFO("%s done in %d ms\n", __FUNCTION__, rtw_get_passing_time_ms(start));
 	pdbgpriv->dbg_sreset_cnt++;
+
+	psrtpriv->self_dect_fw = _FALSE;
+	psrtpriv->rx_cnt = 0;
 #endif
 }

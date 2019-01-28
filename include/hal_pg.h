@@ -562,9 +562,80 @@
 #define	EEPROM_Voltage_ADDR_8723D		0x8
 
 /* ****************************************************
+ *	EEPROM/Efuse PG Offset for 8192F
+ * **************************************************** */
+// 0x10 ~ 0x63 = TX power area.
+#define	EEPROM_TX_PWR_INX_8192F				0x10
+
+#define	EEPROM_ChannelPlan_8192F			0xB8
+#define	EEPROM_XTAL_8192F					0xB9
+#define	EEPROM_THERMAL_METER_8192F			0xBA
+#define	EEPROM_IQK_LCK_8192F				0xBB
+#define	EEPROM_2G_5G_PA_TYPE_8192F			0xBC
+#define	EEPROM_2G_LNA_TYPE_GAIN_SEL_8192F	0xBD
+#define	EEPROM_5G_LNA_TYPE_GAIN_SEL_8192F	0xBF
+
+#define	EEPROM_RF_BOARD_OPTION_8192F		0xC1
+#define	EEPROM_FEATURE_OPTION_8192F			0xC2
+#define	EEPROM_RF_BT_SETTING_8192F			0xC3
+#define	EEPROM_VERSION_8192F				0xC4
+#define	EEPROM_CustomID_8192F				0xC5
+#define	EEPROM_TX_BBSWING_2G_8192F			0xC6
+#define	EEPROM_TX_BBSWING_5G_8192F			0xC7
+#define	EEPROM_TX_PWR_CALIBRATE_RATE_8192F	0xC8
+#define	EEPROM_RF_ANTENNA_OPT_8192F			0xC9
+#define	EEPROM_RFE_OPTION_8192F				0xCA
+#define EEPROM_COUNTRY_CODE_8192F			0xCB
+/*RTL8192FS*/
+#define	EEPROM_MAC_ADDR_8192FS				0x11A
+#define EEPROM_Voltage_ADDR_8192F			0x8
+/* RTL8192FU */
+#define EEPROM_MAC_ADDR_8192FU                  		0x107
+#define EEPROM_VID_8192FU                      			0x100
+#define EEPROM_PID_8192FU                      			0x102
+#define EEPROM_USB_OPTIONAL_FUNCTION0_8192FU    0x104
+
+/* ****************************************************
+ *	EEPROM/Efuse PG Offset for 8710B
+ * **************************************************** */
+#define RTL_EEPROM_ID_8710B 					0x8195
+// 0x10 ~ 0x63 = TX power area.
+#define EEPROM_TX_PWR_INX_8710B				0x20
+#define EEPROM_Default_ThermalMeter_8710B		0x1A
+
+#define	EEPROM_CHANNEL_PLAN_8710B			0xC8
+#define	EEPROM_XTAL_8710B					0xC9
+#define	EEPROM_THERMAL_METER_8710B			0xCA
+#define	EEPROM_IQK_LCK_8710B					0xCB
+#define	EEPROM_2G_5G_PA_TYPE_8710B			0xCC
+#define	EEPROM_2G_LNA_TYPE_GAIN_SEL_8710B	0xCD
+#define	EEPROM_5G_LNA_TYPE_GAIN_SEL_8710B	0xCF
+#define 	EEPROM_TX_KFREE_8710B				0xEE    //Physical  Efuse Address
+#define 	EEPROM_THERMAL_8710B				0xEF    //Physical  Efuse Address
+#define 	EEPROM_PACKAGE_TYPE_8710B			0xF8    //Physical  Efuse Address
+
+#define EEPROM_RF_BOARD_OPTION_8710B		0x131
+#define EEPROM_RF_FEATURE_OPTION_8710B		0x132
+#define EEPROM_RF_BT_SETTING_8710B			0x133
+#define EEPROM_VERSION_8710B					0x134
+#define EEPROM_CUSTOM_ID_8710B				0x135
+#define EEPROM_TX_BBSWING_2G_8710B			0x136
+#define EEPROM_TX_BBSWING_5G_8710B			0x137
+#define EEPROM_TX_PWR_CALIBRATE_RATE_8710B	0x138
+#define EEPROM_RF_ANTENNA_OPT_8710B			0x139
+#define EEPROM_RFE_OPTION_8710B				0x13A
+#define EEPROM_COUNTRY_CODE_8710B			0x13B
+#define EEPROM_COUNTRY_CODE_2_8710B			0x13C
+
+#define EEPROM_MAC_ADDR_8710B 				0x11A
+#define EEPROM_VID_8710BU						0x1C0
+#define EEPROM_PID_8710BU						0x1C2
+
+/* ****************************************************
  *			EEPROM/Efuse Value Type
  * **************************************************** */
 #define EETYPE_TX_PWR							0x0
+#define EETYPE_MAX_RFE_8192F					0x31
 /* ****************************************************
  *			EEPROM/Efuse Default Value
  * **************************************************** */
@@ -613,7 +684,7 @@
 #define	EEPROM_Default_ThermalMeter_8723D		0x18
 #define	EEPROM_Default_ThermalMeter_8188F		0x18
 #define EEPROM_Default_ThermalMeter_8814A		0x18
-
+#define	EEPROM_Default_ThermalMeter_8192F		0x1A
 
 #define EEPROM_Default_CrystalCap				0x0
 #define EEPROM_Default_CrystalCap_8723A		0x20
@@ -625,6 +696,7 @@
 #define EEPROM_Default_CrystalCap_8703B			0x20
 #define EEPROM_Default_CrystalCap_8723D			0x20
 #define EEPROM_Default_CrystalCap_8188F			0x20
+#define EEPROM_Default_CrystalCap_8192F			0x20
 #define EEPROM_Default_CrystalFreq				0x0
 #define EEPROM_Default_TxPowerLevel_92C		0x22
 #define EEPROM_Default_TxPowerLevel_2G			0x2C
@@ -772,7 +844,8 @@ typedef	enum _BT_CoType {
 	BT_RTL8703B		= 12,
 	BT_RTL8822B		= 13,
 	BT_RTL8723D		= 14,
-	BT_RTL8821C		= 15
+	BT_RTL8821C		= 15,
+	BT_RTL8192F		= 16
 } BT_CoType, *PBT_CoType;
 
 typedef	enum _BT_RadioShared {

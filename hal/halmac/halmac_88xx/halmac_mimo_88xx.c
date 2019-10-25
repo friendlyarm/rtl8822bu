@@ -22,6 +22,7 @@
 
 #define TXBF_CTRL_CFG	(BIT_R_ENABLE_NDPA | BIT_USE_NDPA_PARAMETER | \
 			 BIT_R_EN_NDPA_INT | BIT_DIS_NDP_BFEN)
+#define CSI_RATE_MAP	0x292911
 
 static void
 cfg_mu_bfee_88xx(struct halmac_adapter *adapter,
@@ -252,6 +253,16 @@ cfg_sounding_88xx(struct halmac_adapter *adapter, enum halmac_snd_role role,
 		HALMAC_REG_W8(REG_SND_PTCL_CTRL + 3, 0x26);
 		HALMAC_REG_W8_CLR(REG_RXFLTMAP1, BIT(4));
 		HALMAC_REG_W8_CLR(REG_RXFLTMAP4, BIT(4));
+		#if (HALMAC_8822C_SUPPORT || HALMAC_8812F_SUPPORT)
+		if (adapter->chip_id == HALMAC_CHIP_ID_8822C)
+			HALMAC_REG_W32(REG_CSI_RRSR,
+				       BIT_CSI_RRSC_BITMAP(CSI_RATE_MAP) |
+				       BIT_OFDM_LEN_TH(0));
+		else if (adapter->chip_id == HALMAC_CHIP_ID_8812F)
+			HALMAC_REG_W32(REG_CSI_RRSR,
+				       BIT_CSI_RRSC_BITMAP(CSI_RATE_MAP) |
+				       BIT_OFDM_LEN_TH(3));
+		#endif
 		break;
 	default:
 		return HALMAC_RET_INVALID_SOUNDING_SETTING;

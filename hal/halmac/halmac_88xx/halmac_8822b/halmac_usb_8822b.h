@@ -18,7 +18,7 @@
 
 #include "../../halmac_api.h"
 
-#if HALMAC_8822B_SUPPORT
+#if (HALMAC_8822B_SUPPORT && HALMAC_USB_SUPPORT)
 
 extern struct halmac_intf_phy_para usb2_phy_param_8822b[];
 extern struct halmac_intf_phy_para usb3_phy_param_8822b[];

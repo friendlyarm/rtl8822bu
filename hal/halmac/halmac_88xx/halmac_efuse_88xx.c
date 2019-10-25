@@ -22,7 +22,6 @@
 
 #define RSVD_EFUSE_SIZE		16
 #define RSVD_CS_EFUSE_SIZE	24
-#define PROTECT_EFUSE_SIZE	96
 #define FEATURE_DUMP_PHY_EFUSE	HALMAC_FEATURE_DUMP_PHYSICAL_EFUSE
 #define FEATURE_DUMP_LOG_EFUSE	HALMAC_FEATURE_DUMP_LOGICAL_EFUSE
 
@@ -36,9 +35,6 @@ proc_dump_efuse_88xx(struct halmac_adapter *adapter,
 static enum halmac_ret_status
 read_hw_efuse_88xx(struct halmac_adapter *adapter, u32 offset, u32 size,
 		   u8 *map);
-
-static enum halmac_ret_status
-eeprom_parser_88xx(struct halmac_adapter *adapter, u8 *phy_map, u8 *log_map);
 
 static enum halmac_ret_status
 read_log_efuse_map_88xx(struct halmac_adapter *adapter, u8 *map);
@@ -98,6 +94,7 @@ dump_efuse_map_88xx(struct halmac_adapter *adapter,
 	u8 *map = NULL;
 	u8 *efuse_map;
 	u32 efuse_size = adapter->hw_cfg_info.efuse_size;
+	u32 prtct_efuse_size = adapter->hw_cfg_info.prtct_efuse_size;
 	enum halmac_ret_status status = HALMAC_RET_SUCCESS;
 	enum halmac_cmd_process_status *proc_status;
 
@@ -149,13 +146,17 @@ dump_efuse_map_88xx(struct halmac_adapter *adapter,
 		}
 		PLTFM_MEMSET(map, 0xFF, efuse_size);
 		PLTFM_MUTEX_LOCK(&adapter->efuse_mutex);
-		PLTFM_MEMCPY(map, efuse_map, efuse_size - PROTECT_EFUSE_SIZE);
-		PLTFM_MEMCPY(map + efuse_size - PROTECT_EFUSE_SIZE +
+#if HALMAC_PLATFORM_WINDOWS
+		PLTFM_MEMCPY(map, efuse_map, efuse_size);
+#else
+		PLTFM_MEMCPY(map, efuse_map, efuse_size - prtct_efuse_size);
+		PLTFM_MEMCPY(map + efuse_size - prtct_efuse_size +
 			     RSVD_CS_EFUSE_SIZE,
-			     efuse_map + efuse_size - PROTECT_EFUSE_SIZE +
+			     efuse_map + efuse_size - prtct_efuse_size +
 			     RSVD_CS_EFUSE_SIZE,
-			     PROTECT_EFUSE_SIZE - RSVD_EFUSE_SIZE -
+			     prtct_efuse_size - RSVD_EFUSE_SIZE -
 			     RSVD_CS_EFUSE_SIZE);
+#endif
 		PLTFM_MUTEX_UNLOCK(&adapter->efuse_mutex);
 
 		PLTFM_EVENT_SIG(HALMAC_FEATURE_DUMP_PHYSICAL_EFUSE,
@@ -398,8 +399,8 @@ get_efuse_available_size_88xx(struct halmac_adapter *adapter, u32 *size)
 	if (status != HALMAC_RET_SUCCESS)
 		return status;
 
-	*size = adapter->hw_cfg_info.efuse_size - PROTECT_EFUSE_SIZE -
-		adapter->efuse_end;
+	*size = adapter->hw_cfg_info.efuse_size -
+		adapter->hw_cfg_info.prtct_efuse_size -	adapter->efuse_end;
 
 	PLTFM_MSG_TRACE("[TRACE]%s <===\n", __func__);
 
@@ -987,7 +988,7 @@ write_hw_efuse_88xx(struct halmac_adapter *adapter, u32 offset, u8 value)
 	return HALMAC_RET_SUCCESS;
 }
 
-static enum halmac_ret_status
+enum halmac_ret_status
 eeprom_parser_88xx(struct halmac_adapter *adapter, u8 *phy_map, u8 *log_map)
 {
 	u8 i;
@@ -999,6 +1000,7 @@ eeprom_parser_88xx(struct halmac_adapter *adapter, u8 *phy_map, u8 *log_map)
 	u8 hdr2 = 0;
 	u32 eeprom_idx;
 	u32 efuse_idx = 0;
+	u32 prtct_efuse_size = adapter->hw_cfg_info.prtct_efuse_size;
 	struct halmac_hw_cfg_info *hw_info = &adapter->hw_cfg_info;
 
 	PLTFM_MEMSET(log_map, 0xFF, hw_info->eeprom_size);
@@ -1025,7 +1027,7 @@ eeprom_parser_88xx(struct halmac_adapter *adapter, u8 *phy_map, u8 *log_map)
 
 		efuse_idx++;
 
-		if (efuse_idx >= hw_info->efuse_size - PROTECT_EFUSE_SIZE - 1)
+		if (efuse_idx >= hw_info->efuse_size - prtct_efuse_size - 1)
 			return HALMAC_RET_EEPROM_PARSING_FAIL;
 
 		for (i = 0; i < 4; i++) {
@@ -1053,7 +1055,7 @@ eeprom_parser_88xx(struct halmac_adapter *adapter, u8 *phy_map, u8 *log_map)
 				efuse_idx++;
 
 				if (efuse_idx > hw_info->efuse_size -
-				    PROTECT_EFUSE_SIZE - 1)
+				    prtct_efuse_size - 1)
 					return HALMAC_RET_EEPROM_PARSING_FAIL;
 
 				value8 = *(phy_map + efuse_idx);
@@ -1062,7 +1064,7 @@ eeprom_parser_88xx(struct halmac_adapter *adapter, u8 *phy_map, u8 *log_map)
 				efuse_idx++;
 
 				if (efuse_idx > hw_info->efuse_size -
-				    PROTECT_EFUSE_SIZE)
+				    prtct_efuse_size)
 					return HALMAC_RET_EEPROM_PARSING_FAIL;
 			}
 		}
@@ -1252,6 +1254,7 @@ proc_write_log_efuse_88xx(struct halmac_adapter *adapter, u32 offset, u8 value)
 	u8 hdr2;
 	u8 *map = NULL;
 	u32 eeprom_size = adapter->hw_cfg_info.eeprom_size;
+	u32 prtct_efuse_size = adapter->hw_cfg_info.prtct_efuse_size;
 	u32 end;
 	enum halmac_ret_status status = HALMAC_RET_SUCCESS;
 
@@ -1292,7 +1295,7 @@ proc_write_log_efuse_88xx(struct halmac_adapter *adapter, u32 offset, u8 value)
 
 		if (offset > 0x7f) {
 			if (adapter->hw_cfg_info.efuse_size <=
-			    4 + PROTECT_EFUSE_SIZE + end) {
+			    4 + prtct_efuse_size + end) {
 				PLTFM_FREE(map, eeprom_size);
 				return HALMAC_RET_EFUSE_NOT_ENOUGH;
 			}
@@ -1322,7 +1325,7 @@ proc_write_log_efuse_88xx(struct halmac_adapter *adapter, u32 offset, u8 value)
 			}
 		} else {
 			if (adapter->hw_cfg_info.efuse_size <=
-			    3 + PROTECT_EFUSE_SIZE + end) {
+			    3 + prtct_efuse_size + end) {
 				PLTFM_FREE(map, eeprom_size);
 				return HALMAC_RET_EFUSE_NOT_ENOUGH;
 			}
@@ -1488,7 +1491,8 @@ check_efuse_enough_88xx(struct halmac_adapter *adapter,
 	}
 
 	if (adapter->hw_cfg_info.efuse_size <=
-	    (pg_num + PROTECT_EFUSE_SIZE + adapter->efuse_end))
+	    (pg_num + adapter->hw_cfg_info.prtct_efuse_size +
+	    adapter->efuse_end))
 		return HALMAC_RET_EFUSE_NOT_ENOUGH;
 
 	return HALMAC_RET_SUCCESS;
@@ -1780,6 +1784,7 @@ get_dump_phy_efuse_status_88xx(struct halmac_adapter *adapter,
 {
 	u8 *map = NULL;
 	u32 efuse_size = adapter->hw_cfg_info.efuse_size;
+	u32 prtct_efuse_size = adapter->hw_cfg_info.prtct_efuse_size;
 	struct halmac_efuse_state *state = &adapter->halmac_state.efuse_state;
 
 	*proc_status = state->proc_status;
@@ -1806,12 +1811,12 @@ get_dump_phy_efuse_status_88xx(struct halmac_adapter *adapter,
 		PLTFM_MEMSET(map, 0xFF, efuse_size);
 		PLTFM_MUTEX_LOCK(&adapter->efuse_mutex);
 		PLTFM_MEMCPY(map, adapter->efuse_map,
-			     efuse_size - PROTECT_EFUSE_SIZE);
-		PLTFM_MEMCPY(map + efuse_size - PROTECT_EFUSE_SIZE +
+			     efuse_size - prtct_efuse_size);
+		PLTFM_MEMCPY(map + efuse_size - prtct_efuse_size +
 			     RSVD_CS_EFUSE_SIZE,
 			     adapter->efuse_map + efuse_size -
-			     PROTECT_EFUSE_SIZE + RSVD_CS_EFUSE_SIZE,
-			     PROTECT_EFUSE_SIZE - RSVD_EFUSE_SIZE -
+			     prtct_efuse_size + RSVD_CS_EFUSE_SIZE,
+			     prtct_efuse_size - RSVD_EFUSE_SIZE -
 			     RSVD_CS_EFUSE_SIZE);
 		PLTFM_MUTEX_UNLOCK(&adapter->efuse_mutex);
 
@@ -1899,7 +1904,7 @@ get_h2c_ack_phy_efuse_88xx(struct halmac_adapter *adapter, u8 *buf, u32 size)
 u32
 get_rsvd_efuse_size_88xx(struct halmac_adapter *adapter)
 {
-	return PROTECT_EFUSE_SIZE;
+	return adapter->hw_cfg_info.prtct_efuse_size;
 }
 
 #endif /* HALMAC_88XX_SUPPORT */

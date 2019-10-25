@@ -796,8 +796,12 @@ chk_pinmux_valid_8822b(struct halmac_adapter *adapter,
 			status = HALMAC_RET_PINMUX_USED;
 		break;
 	case HALMAC_GPIO_FUNC_SW_IO_8:
-	case HALMAC_GPIO_FUNC_WL_LED:
 		if (info->sw_io_8 == 1 || info->wl_led == 1)
+			status = HALMAC_RET_PINMUX_USED;
+		break;
+	case HALMAC_GPIO_FUNC_WL_LED:
+		if (info->sw_io_8 == 1 || info->wl_led == 1 ||
+		    info->bt_dev_wake == 1 || info->bt_host_wake == 1)
 			status = HALMAC_RET_PINMUX_USED;
 		break;
 	case HALMAC_GPIO_FUNC_SW_IO_9:
@@ -817,13 +821,21 @@ chk_pinmux_valid_8822b(struct halmac_adapter *adapter,
 			status = HALMAC_RET_PINMUX_USED;
 		break;
 	case HALMAC_GPIO_FUNC_SW_IO_13:
-	case HALMAC_GPIO_FUNC_BT_DEV_WAKE1:
 		if (info->sw_io_13 == 1 || info->bt_dev_wake == 1)
 			status = HALMAC_RET_PINMUX_USED;
 		break;
+	case HALMAC_GPIO_FUNC_BT_DEV_WAKE1:
+		if (info->sw_io_13 == 1 || info->bt_dev_wake == 1 ||
+		    info->wl_led == 1)
+			status = HALMAC_RET_PINMUX_USED;
+		break;
 	case HALMAC_GPIO_FUNC_SW_IO_14:
-	case HALMAC_GPIO_FUNC_BT_HOST_WAKE1:
 		if (info->sw_io_14 == 1 || info->bt_host_wake == 1)
+			status = HALMAC_RET_PINMUX_USED;
+		break;
+	case HALMAC_GPIO_FUNC_BT_HOST_WAKE1:
+		if (info->sw_io_14 == 1 || info->bt_host_wake == 1 ||
+		    info->wl_led == 1)
 			status = HALMAC_RET_PINMUX_USED;
 		break;
 	case HALMAC_GPIO_FUNC_SW_IO_15:

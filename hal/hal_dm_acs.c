@@ -551,3 +551,4 @@ s16 rtw_noise_measure_curchan(_adapter *padapter)
 	return noise;
 }
 #endif /*CONFIG_BACKGROUND_NOISE_MONITOR*/
+

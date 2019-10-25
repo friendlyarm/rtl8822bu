@@ -18,7 +18,7 @@
 #include "../halmac_init_88xx.h"
 #include "../halmac_common_88xx.h"
 
-#if HALMAC_8822B_SUPPORT
+#if (HALMAC_8822B_SUPPORT && HALMAC_USB_SUPPORT)
 
 /**
  * mac_pwr_switch_usb_8822b() - switch mac power

@@ -31,6 +31,22 @@
 	#include "halrf/rtl8821c/halrf_iqk_8821c.h"
 #endif
 
+#if (RTL8195B_SUPPORT == 1)
+//	#include "halrf/rtl8195b/halrf.h"
+	#include "halrf/rtl8195b/halrf_iqk_8195b.h"
+	#include "halrf/rtl8195b/halrf_txgapk_8195b.h"
+	#include "halrf/rtl8195b/halrf_dpk_8195b.h"
+#endif
+
+#if (RTL8198F_SUPPORT == 1)
+	#include "halrf/rtl8198f/halrf_iqk_8198f.h"
+	#include "halrf/rtl8198f/halrf_dpk_8198f.h"
+#endif
+
+#if (RTL8814B_SUPPORT == 1)
+	#include "halrf/rtl8814b/halrf_iqk_8814b.h"
+#endif
+
 enum pwrtrack_method {
 	BBSWING,
 	TXAGC,
@@ -45,7 +61,7 @@ typedef void	(*func_lck)(void *);
 typedef void	(*func_swing)(void *, u8 **, u8 **, u8 **, u8 **);
 typedef void	(*func_swing8814only)(void *, u8 **, u8 **, u8 **, u8 **);
 typedef void	(*func_all_swing)(void *, u8 **, u8 **, u8 **, u8 **, u8 **, u8 **, u8 **, u8 **);
-
+typedef void	(*func_all_swing_ex)(void *, u8 **, u8 **, u8 **, u8 **, u8 **, u8 **, u8 **, u8 **);
 
 struct txpwrtrack_cfg {
 	u8		swing_table_size_cck;
@@ -60,7 +76,8 @@ struct txpwrtrack_cfg {
 	func_lck		phy_lc_calibrate;
 	func_swing	get_delta_swing_table;
 	func_swing8814only	get_delta_swing_table8814only;
-	func_all_swing	get_delta_all_swing_table;
+	func_all_swing		get_delta_all_swing_table;
+	func_all_swing_ex	get_delta_all_swing_table_ex;
 };
 
 void

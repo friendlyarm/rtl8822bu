@@ -452,3 +452,4 @@ u8 rtw_btcoex_LPS_Leave(PADAPTER padapter);
 #endif /* CONFIG_BT_COEXIST */
 
 void rtw_btcoex_set_ant_info(PADAPTER padapter);
+

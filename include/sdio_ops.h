@@ -173,6 +173,19 @@ extern void ClearInterrupt8188FSdio(PADAPTER padapter);
 #endif /* defined(CONFIG_WOWLAN) || defined(CONFIG_AP_WOWLAN) */
 #endif
 
+#ifdef CONFIG_RTL8188GTV
+extern void InitInterrupt8188GTVSdio(PADAPTER padapter);
+extern void InitSysInterrupt8188GTVSdio(PADAPTER padapter);
+extern void EnableInterrupt8188GTVSdio(PADAPTER padapter);
+extern void DisableInterrupt8188GTVSdio(PADAPTER padapter);
+extern u8 HalQueryTxBufferStatus8188GTVSdio(PADAPTER padapter);
+extern u8 HalQueryTxOQTBufferStatus8188GTVSdio(PADAPTER padapter);
+#if defined(CONFIG_WOWLAN) || defined(CONFIG_AP_WOWLAN)
+extern void DisableInterruptButCpwm28188GTVSdio(PADAPTER padapter);
+extern void ClearInterrupt8188GTVSdio(PADAPTER padapter);
+#endif /* defined(CONFIG_WOWLAN) || defined(CONFIG_AP_WOWLAN) */
+#endif
+
 /**
  * rtw_sdio_get_block_size() - Get block size of SDIO transfer
  * @d		struct dvobj_priv*

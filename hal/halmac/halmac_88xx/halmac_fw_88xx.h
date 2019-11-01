@@ -30,6 +30,9 @@ free_download_firmware_88xx(struct halmac_adapter *adapter,
 			    enum halmac_dlfw_mem mem_sel, u8 *fw_bin, u32 size);
 
 enum halmac_ret_status
+reset_wifi_fw_88xx(struct halmac_adapter *adapter);
+
+enum halmac_ret_status
 get_fw_version_88xx(struct halmac_adapter *adapter,
 		    struct halmac_fw_version *ver);
 

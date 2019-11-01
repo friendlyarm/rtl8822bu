@@ -3047,7 +3047,7 @@ void	beamforming_wk_hdl(_adapter *padapter, u8 type, u8 *pbuf)
 		struct sta_info	*psta = (PVOID)pbuf;
 		u16			staIdx = psta->cmn.mac_id;
 
-		beamforming_enter(pDM_Odm, staIdx);
+		beamforming_enter(pDM_Odm, staIdx, adapter_mac_addr(psta->padapter));
 		break;
 	}
 	case BEAMFORMING_CTRL_LEAVE:

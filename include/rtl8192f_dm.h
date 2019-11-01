@@ -15,7 +15,6 @@
 #ifndef __RTL8192F_DM_H__
 #define __RTL8192F_DM_H__
 
-
 void rtl8192f_init_dm_priv(IN PADAPTER Adapter);
 void rtl8192f_deinit_dm_priv(IN PADAPTER Adapter);
 void rtl8192f_InitHalDm(IN PADAPTER Adapter);

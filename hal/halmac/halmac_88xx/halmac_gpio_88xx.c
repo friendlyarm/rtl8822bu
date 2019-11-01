@@ -418,3 +418,4 @@ pinmux_record_88xx(struct halmac_adapter *adapter,
 }
 
 #endif /* HALMAC_88XX_SUPPORT */
+

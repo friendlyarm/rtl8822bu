@@ -294,13 +294,17 @@
 	SET_BITS_TO_LE_4BYTE(__pTxDesc+24, 16, 3, __Value)
 
 /* Dword 7 */
-#if (DEV_BUS_TYPE == RT_PCI_INTERFACE)
+#ifdef CONFIG_PCI_HCI
 #define SET_TX_DESC_TX_BUFFER_SIZE_8192F(__pTxDesc, __Value) \
 	SET_BITS_TO_LE_4BYTE(__pTxDesc+28, 0, 16, __Value)
-#elif(DEV_BUS_TYPE == RT_USB_INTERFACE)
+#endif
+
+#ifdef CONFIG_USB_HCI
 #define SET_TX_DESC_TX_DESC_CHECKSUM_8192F(__pTxDesc, __Value) \
 	SET_BITS_TO_LE_4BYTE(__pTxDesc+28, 0, 16, __Value)
-#else
+#endif
+
+#ifdef CONFIG_SDIO_HCI
 #define SET_TX_DESC_TX_TIMESTAMP_8192F(__pTxDesc, __Value) \
 	SET_BITS_TO_LE_4BYTE(__pTxDesc+28, 6, 18, __Value)
 #endif
@@ -496,6 +500,31 @@ void fill_txdesc_bmc_tx_rate(struct pkt_attrib *pattrib, u8 *ptxdesc);
 	thread_return rtl8192fs_xmit_thread(thread_context context);
 	#define hal_xmit_handler rtl8192fs_xmit_buf_handler
 #endif
+
+#ifdef CONFIG_USB_HCI
+	s32 rtl8192fu_init_xmit_priv(PADAPTER padapter);
+	void rtl8192fu_free_xmit_priv(PADAPTER padapter);
+	s32 rtl8192fu_hal_xmit(PADAPTER padapter, struct xmit_frame *pxmitframe);
+	s32 rtl8192fu_mgnt_xmit(PADAPTER padapter, struct xmit_frame *pmgntframe);
+	s32	 rtl8192fu_hal_xmitframe_enqueue(_adapter *padapter, struct xmit_frame *pxmitframe);
+	s32 rtl8192fu_xmit_buf_handler(PADAPTER padapter);
+	#define hal_xmit_handler rtl8192fu_xmit_buf_handler
+	void rtl8192fu_xmit_tasklet(void *priv);
+	s32 rtl8192fu_xmitframe_complete(_adapter *padapter, struct xmit_priv *pxmitpriv, struct xmit_buf *pxmitbuf);
+	void _dbg_dump_tx_info(_adapter	*padapter,int frame_tag,struct tx_desc *ptxdesc);
+#endif
+
+#ifdef CONFIG_PCI_HCI
+	s32 rtl8192fe_init_xmit_priv(PADAPTER padapter);
+	void rtl8192fe_free_xmit_priv(PADAPTER padapter);
+	struct xmit_buf *rtl8192fe_dequeue_xmitbuf(struct rtw_tx_ring *ring);
+	void    rtl8192fe_xmitframe_resume(_adapter *padapter);
+	s32 rtl8192fe_hal_xmit(PADAPTER padapter, struct xmit_frame *pxmitframe);
+	s32 rtl8192fe_mgnt_xmit(PADAPTER padapter, struct xmit_frame *pmgntframe);
+	s32     rtl8192fe_hal_xmitframe_enqueue(_adapter *padapter, struct xmit_frame *pxmitframe);
+	void rtl8192fe_xmit_tasklet(void *priv);
+#endif
+
 u8	BWMapping_8192F(PADAPTER Adapter, struct pkt_attrib *pattrib);
 u8	SCMapping_8192F(PADAPTER Adapter, struct pkt_attrib	*pattrib);
 

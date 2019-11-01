@@ -23,16 +23,17 @@
  *
  *****************************************************************************/
 
+#ifndef __PHYDMPREDEFINE_H__
+#define __PHYDMPREDEFINE_H__
 
-#ifndef	__PHYDMPREDEFINE_H__
-#define    __PHYDMPREDEFINE_H__
-
-/* 1 ============================================================
+/****************************************************************
+ * 1 ============================================================
  * 1  Definition
- * 1 ============================================================ */
+ * 1 ============================================================
+ ***************************************************************/
 
-#define PHYDM_CODE_BASE			"PHYDM_V025"
-#define PHYDM_RELEASE_DATE		"20180103.0"
+#define PHYDM_CODE_BASE			"PHYDM_V033"
+#define PHYDM_RELEASE_DATE		"20180906.0"
 
 /*PHYDM API status*/
 #define	PHYDM_SET_FAIL			0
@@ -43,7 +44,7 @@
 #define	PHYDM_SET			1
 #define	PHYDM_REVERT			2
 
-/* Max path of IC */
+/* @Max path of IC */
 /*N-IC*/
 #define MAX_PATH_NUM_8188E		1
 #define MAX_PATH_NUM_8188F		1
@@ -55,7 +56,9 @@
 #define MAX_PATH_NUM_8192F		2
 #define MAX_PATH_NUM_8197F		2
 #define MAX_PATH_NUM_8198F		4
-/*AC-IC*/
+#define MAX_PATH_NUM_8197G		2
+#define MAX_PATH_NUM_8721D		1
+/*@AC-IC*/
 #define MAX_PATH_NUM_8821A		1
 #define MAX_PATH_NUM_8881A		1
 #define MAX_PATH_NUM_8821C		1
@@ -67,31 +70,43 @@
 #define MAX_PATH_NUM_8814B		4
 #define MAX_PATH_NUM_8814C		4
 #define MAX_PATH_NUM_8195B		1
+#define MAX_PATH_NUM_8812F		2
 
-/* Max RF path */
-#define PHYDM_MAX_RF_PATH_N		2	/*For old N-series IC*/
+/* @Max RF path */
+#define PHYDM_MAX_RF_PATH_N		2	/*@For old N-series IC*/
 #define PHYDM_MAX_RF_PATH		4
 
 /* number of entry */
 #if (DM_ODM_SUPPORT_TYPE & (ODM_CE))
 	#ifdef DM_ODM_CE_MAC80211
-		/* defined in wifi.h (32+1) */
+		/* @defined in wifi.h (32+1) */
 	#else
-		#define	ASSOCIATE_ENTRY_NUM	MACID_NUM_SW_LIMIT  /* Max size of asoc_entry[].*/
+		#define	ASSOCIATE_ENTRY_NUM	MACID_NUM_SW_LIMIT  /* @Max size of asoc_entry[].*/
 	#endif
 	#define	ODM_ASSOCIATE_ENTRY_NUM	ASSOCIATE_ENTRY_NUM
 #elif(DM_ODM_SUPPORT_TYPE & (ODM_AP))
 	#define ASSOCIATE_ENTRY_NUM	NUM_STAT
-	#define	ODM_ASSOCIATE_ENTRY_NUM	(ASSOCIATE_ENTRY_NUM+1)
+	#define	ODM_ASSOCIATE_ENTRY_NUM	(ASSOCIATE_ENTRY_NUM + 1)
+#elif(DM_ODM_SUPPORT_TYPE & (ODM_IOT))
+	#ifdef CONFIG_CONCURRENT_MODE
+		#define ASSOCIATE_ENTRY_NUM	NUM_STA + 2 /*@2 is for station mod*/
+	#else
+		#define ASSOCIATE_ENTRY_NUM	NUM_STA /*@8 is for max size of asoc_entry[].*/
+	#endif
+	#define	ODM_ASSOCIATE_ENTRY_NUM	ASSOCIATE_ENTRY_NUM
 #else
-	#define ODM_ASSOCIATE_ENTRY_NUM	((ASSOCIATE_ENTRY_NUM*3)+1)
+	#define ODM_ASSOCIATE_ENTRY_NUM	(((ASSOCIATE_ENTRY_NUM + 1) * 3) + 1)
 #endif
 
-/* -----MGN rate--------------------------------- */
+/* @-----MGN rate--------------------------------- */
 
 enum PDM_RATE_TYPE {
-	PDM_CCK			= 0,
-	PDM_OFDM		= 1
+	PDM_1SS			= 1,	/*VHT/HT 1SS*/
+	PDM_2SS			= 2,	/*VHT/HT 2SS*/
+	PDM_3SS			= 3,	/*VHT/HT 3SS*/
+	PDM_4SS			= 4,	/*VHT/HT 4SS*/
+	PDM_CCK			= 11,	/*@B*/
+	PDM_OFDM		= 12	/*@G*/
 };
 
 enum ODM_MGN_RATE {
@@ -200,11 +215,10 @@ enum ODM_MGN_RATE {
 #define	ODM_MGN_MCS14_SG	0xce
 #define	ODM_MGN_MCS15_SG	0xcf
 
-/* -----DESC rate--------------------------------- */
+/* @-----DESC rate--------------------------------- */
 
 #define ODM_RATEMCS15_SG	0x1c
 #define ODM_RATEMCS32		0x20
-
 
 enum phydm_ctrl_info_rate {
 	ODM_RATE1M		= 0x00,
@@ -220,7 +234,7 @@ enum phydm_ctrl_info_rate {
 	ODM_RATE36M		= 0x09,
 	ODM_RATE48M		= 0x0A,
 	ODM_RATE54M		= 0x0B,
-/* MCS Rates, TxHT = 1 */
+/* @MCS Rates, TxHT = 1 */
 	ODM_RATEMCS0		= 0x0C,
 	ODM_RATEMCS1		= 0x0D,
 	ODM_RATEMCS2		= 0x0E,
@@ -296,20 +310,21 @@ enum phydm_ctrl_info_rate {
 };
 
 #if (DM_ODM_SUPPORT_TYPE == ODM_WIN)
-	#define ODM_NUM_RATE_IDX (ODM_RATEVHTSS4MCS9+1)
+	#define ODM_NUM_RATE_IDX (ODM_RATEVHTSS4MCS9 + 1)
 #else
-	#if (RTL8192E_SUPPORT == 1) || (RTL8197F_SUPPORT == 1) || (RTL8192F_SUPPORT == 1)/*jj add 20170822*/
-		#define ODM_NUM_RATE_IDX (ODM_RATEMCS15+1)
-	#elif (RTL8723B_SUPPORT == 1) || (RTL8188E_SUPPORT == 1) || (RTL8188F_SUPPORT == 1)
-		#define ODM_NUM_RATE_IDX (ODM_RATEMCS7+1)
-	#elif (RTL8821A_SUPPORT == 1) || (RTL8881A_SUPPORT == 1)
-		#define ODM_NUM_RATE_IDX (ODM_RATEVHTSS1MCS9+1)
-	#elif (RTL8812A_SUPPORT == 1)
-		#define ODM_NUM_RATE_IDX (ODM_RATEVHTSS2MCS9+1)
-	#elif (RTL8814A_SUPPORT == 1)
-		#define ODM_NUM_RATE_IDX (ODM_RATEVHTSS3MCS9+1)
+	#if (RTL8192E_SUPPORT || RTL8197F_SUPPORT || RTL8192F_SUPPORT)
+		#define ODM_NUM_RATE_IDX (ODM_RATEMCS15 + 1)
+	#elif (RTL8723B_SUPPORT || RTL8188E_SUPPORT || \
+	       RTL8188F_SUPPORT || RTL8721D_SUPPORT)
+		#define ODM_NUM_RATE_IDX (ODM_RATEMCS7 + 1)
+	#elif (RTL8821A_SUPPORT || RTL8881A_SUPPORT)
+		#define ODM_NUM_RATE_IDX (ODM_RATEVHTSS1MCS9 + 1)
+	#elif (RTL8812A_SUPPORT)
+		#define ODM_NUM_RATE_IDX (ODM_RATEVHTSS2MCS9 + 1)
+	#elif (RTL8814A_SUPPORT)
+		#define ODM_NUM_RATE_IDX (ODM_RATEVHTSS3MCS9 + 1)
 	#else
-		#define ODM_NUM_RATE_IDX (ODM_RATEVHTSS4MCS9+1)
+		#define ODM_NUM_RATE_IDX (ODM_RATEVHTSS4MCS9 + 1)
 	#endif
 #endif
 
@@ -317,10 +332,11 @@ enum phydm_ctrl_info_rate {
 	#define CONFIG_SFW_SUPPORTED
 #endif
 
-/* 1 ============================================================
+/****************************************************************
+ * 1 ============================================================
  * 1  enumeration
- * 1 ============================================================ */
-
+ * 1 ============================================================
+ ***************************************************************/
 
 /*	ODM_CMNINFO_INTERFACE */
 enum odm_interface {
@@ -330,8 +346,7 @@ enum odm_interface {
 	ODM_ITRF_ALL	=	0x7,
 };
 
-
-/*========[Run time IC flag] ===============================================================================]*/
+/*@========[Run time IC flag] ===================================*/
 
 enum phydm_ic {
 	ODM_RTL8188E	=	BIT(0),
@@ -353,56 +368,104 @@ enum phydm_ic {
 	ODM_RTL8710B	=	BIT(16),
 	ODM_RTL8192F	=	BIT(17),
 	ODM_RTL8822C	=	BIT(18),
-	ODM_RTL8195B	=	BIT(19)
+	ODM_RTL8195B	=	BIT(19),
+	ODM_RTL8812F	=	BIT(20),
+	ODM_RTL8197G	=	BIT(21),
+	ODM_RTL8721D	=	BIT(22)
 };
 
-#define ODM_IC_N_1SS		(ODM_RTL8188E | ODM_RTL8188F | ODM_RTL8723B | ODM_RTL8703B | ODM_RTL8723D | ODM_RTL8195A | ODM_RTL8710B)
+#define ODM_IC_N_1SS		(ODM_RTL8188E | ODM_RTL8188F | ODM_RTL8723B |\
+				 ODM_RTL8703B | ODM_RTL8723D | ODM_RTL8195A |\
+				 ODM_RTL8710B | ODM_RTL8721D)
 #define ODM_IC_N_2SS		(ODM_RTL8192E | ODM_RTL8197F | ODM_RTL8192F)
 #define ODM_IC_N_3SS		0
-#define ODM_IC_N_4SS		(ODM_RTL8198F)
+#define ODM_IC_N_4SS		0
 
-#define ODM_IC_AC_1SS		(ODM_RTL8881A | ODM_RTL8821 | ODM_RTL8821C | ODM_RTL8195B)
-#define ODM_IC_AC_2SS		(ODM_RTL8812 | ODM_RTL8822B | ODM_RTL8822C)
+#define ODM_IC_AC_1SS		(ODM_RTL8881A | ODM_RTL8821 | ODM_RTL8821C |\
+				 ODM_RTL8195B)
+#define ODM_IC_AC_2SS		(ODM_RTL8812 | ODM_RTL8822B)
 #define ODM_IC_AC_3SS		0
-#define ODM_IC_AC_4SS		(ODM_RTL8814A | ODM_RTL8814B)
+#define ODM_IC_AC_4SS		(ODM_RTL8814A)
 
-/*====the following macro DO NOT need to update when adding a new IC======= */
-#define ODM_IC_1SS		(ODM_IC_N_1SS | ODM_IC_AC_1SS)
-#define ODM_IC_2SS		(ODM_IC_N_2SS | ODM_IC_AC_2SS)
-#define ODM_IC_3SS		(ODM_IC_N_3SS | ODM_IC_AC_3SS)
-#define ODM_IC_4SS		(ODM_IC_N_4SS | ODM_IC_AC_4SS)
+#define ODM_IC_JGR3_1SS		0
+#define ODM_IC_JGR3_2SS		(ODM_RTL8822C | ODM_RTL8812F | ODM_RTL8197G)
+#define ODM_IC_JGR3_3SS		0
+#define ODM_IC_JGR3_4SS		(ODM_RTL8198F | ODM_RTL8814B)
 
-#define PHYDM_IC_ABOVE_1SS	(ODM_IC_1SS | ODM_IC_2SS | ODM_IC_3SS | ODM_IC_4SS)
+/*@====the following macro DO NOT need to update when adding a new IC======= */
+#define ODM_IC_1SS		(ODM_IC_N_1SS | ODM_IC_AC_1SS | ODM_IC_JGR3_1SS)
+#define ODM_IC_2SS		(ODM_IC_N_2SS | ODM_IC_AC_2SS | ODM_IC_JGR3_2SS)
+#define ODM_IC_3SS		(ODM_IC_N_3SS | ODM_IC_AC_3SS | ODM_IC_JGR3_3SS)
+#define ODM_IC_4SS		(ODM_IC_N_4SS | ODM_IC_AC_4SS | ODM_IC_JGR3_4SS)
+
+#define PHYDM_IC_ABOVE_1SS	(ODM_IC_1SS | ODM_IC_2SS | ODM_IC_3SS |\
+				 ODM_IC_4SS)
 #define PHYDM_IC_ABOVE_2SS	(ODM_IC_2SS | ODM_IC_3SS | ODM_IC_4SS)
 #define PHYDM_IC_ABOVE_3SS	(ODM_IC_3SS | ODM_IC_4SS)
 #define PHYDM_IC_ABOVE_4SS	ODM_IC_4SS
 
-#define ODM_IC_11N_SERIES	(ODM_IC_N_1SS | ODM_IC_N_2SS | ODM_IC_N_3SS | ODM_IC_N_4SS)
-#define ODM_IC_11AC_SERIES	(ODM_IC_AC_1SS | ODM_IC_AC_2SS | ODM_IC_AC_3SS | ODM_IC_AC_4SS)
-/*====================================================*/
+#define ODM_IC_11N_SERIES	(ODM_IC_N_1SS | ODM_IC_N_2SS | ODM_IC_N_3SS |\
+				 ODM_IC_N_4SS)
+#define ODM_IC_11AC_SERIES	(ODM_IC_AC_1SS | ODM_IC_AC_2SS |\
+				 ODM_IC_AC_3SS | ODM_IC_AC_4SS)
+#define ODM_IC_JGR3_SERIES	(ODM_IC_JGR3_1SS | ODM_IC_JGR3_2SS |\
+				 ODM_IC_JGR3_3SS | ODM_IC_JGR3_4SS)
+/*@====================================================*/
 
 #define ODM_IC_11AC_1_SERIES	(ODM_RTL8812 | ODM_RTL8821 | ODM_RTL8881A)
-#define ODM_IC_11AC_2_SERIES	(ODM_RTL8814A | ODM_RTL8822B | ODM_RTL8821C | ODM_RTL8195B)
-/*[EDCCA]*/
-#define ODM_IC_11N_GAIN_IDX_EDCCA (ODM_RTL8195A | ODM_RTL8703B | ODM_RTL8188F | ODM_RTL8723D | ODM_RTL8197F | ODM_RTL8710B | ODM_RTL8192F)/*jj add 20170822*/
-#define ODM_IC_11AC_GAIN_IDX_EDCCA (ODM_RTL8814A | ODM_RTL8822B | ODM_RTL8821C)
-#define ODM_IC_GAIN_IDX_EDCCA	(ODM_IC_11N_GAIN_IDX_EDCCA | ODM_IC_11AC_GAIN_IDX_EDCCA)
-/*[Phy status type]*/
-#define PHYSTS_2ND_TYPE_IC	(ODM_RTL8197F | ODM_RTL8822B | ODM_RTL8723D | ODM_RTL8821C | ODM_RTL8710B | ODM_RTL8195B | ODM_RTL8192F)/*jj add 20170822*/
-#define PHYSTS_3RD_TYPE_IC	(ODM_RTL8198F | ODM_RTL8814B)
-/*[FW Type]*/
-#define PHYDM_IC_8051_SERIES	(ODM_RTL8881A | ODM_RTL8812 | ODM_RTL8821 | ODM_RTL8192E | ODM_RTL8723B | ODM_RTL8703B | ODM_RTL8188F | ODM_RTL8192F)/*jj add 20170822*/
-#define PHYDM_IC_3081_SERIES	(ODM_RTL8814A | ODM_RTL8822B | ODM_RTL8197F | ODM_RTL8821C | ODM_RTL8195B | ODM_RTL8198F)
-/*[LA mode]*/
-#define PHYDM_IC_SUPPORT_LA_MODE (ODM_RTL8814A | ODM_RTL8822B | ODM_RTL8197F | ODM_RTL8821C | ODM_RTL8195B | ODM_RTL8198F | ODM_RTL8192F)/*jj add 20170822*/
-/*[BF]*/
-#define ODM_IC_TXBF_SUPPORT	(ODM_RTL8192E | ODM_RTL8812 | ODM_RTL8821 | ODM_RTL8814A | ODM_RTL8881A | ODM_RTL8822B | ODM_RTL8197F | ODM_RTL8821C | ODM_RTL8195B | ODM_RTL8198F)
-#define PHYDM_IC_SUPPORT_MU_BFEE (ODM_RTL8822B | ODM_RTL8821C | ODM_RTL8814B | ODM_RTL8195B | ODM_RTL8198F)
-#define PHYDM_IC_SUPPORT_MU_BFER (ODM_RTL8822B | ODM_RTL8814B | ODM_RTL8198F)
+#define ODM_IC_11AC_2_SERIES	(ODM_RTL8814A | ODM_RTL8822B | ODM_RTL8821C |\
+				 ODM_RTL8195B)
 
+/*@[Phy status type]*/
+#define PHYSTS_2ND_TYPE_IC	(ODM_RTL8197F | ODM_RTL8822B | ODM_RTL8723D |\
+				 ODM_RTL8821C | ODM_RTL8710B | ODM_RTL8195B |\
+				 ODM_RTL8192F | ODM_RTL8721D)
+#define PHYSTS_3RD_TYPE_IC	(ODM_RTL8198F | ODM_RTL8814B | ODM_RTL8822C |\
+				 ODM_RTL8812F | ODM_RTL8197G)
+/*@[FW Type]*/
+#define PHYDM_IC_8051_SERIES	(ODM_RTL8881A | ODM_RTL8812 | ODM_RTL8821 |\
+				 ODM_RTL8192E | ODM_RTL8723B | ODM_RTL8703B |\
+				 ODM_RTL8188F | ODM_RTL8192F | ODM_RTL8721D)
+#define PHYDM_IC_3081_SERIES	(ODM_RTL8814A | ODM_RTL8822B | ODM_RTL8197F |\
+				 ODM_RTL8821C | ODM_RTL8195B | ODM_RTL8198F |\
+				 ODM_RTL8822C | ODM_RTL8812F | ODM_RTL8814B |\
+				 ODM_RTL8197G)
+/*@[LA mode]*/
+#define PHYDM_IC_SUPPORT_LA_MODE (ODM_RTL8814A | ODM_RTL8822B | ODM_RTL8197F |\
+				  ODM_RTL8821C | ODM_RTL8195B | ODM_RTL8198F |\
+				  ODM_RTL8192F | ODM_RTL8822C | ODM_RTL8812F |\
+				  ODM_RTL8195B | ODM_RTL8814B | ODM_RTL8197G)
+/*@[BF]*/
+#define ODM_IC_TXBF_SUPPORT	(ODM_RTL8192E | ODM_RTL8812 | ODM_RTL8821 |\
+				 ODM_RTL8814A | ODM_RTL8881A | ODM_RTL8822B |\
+				 ODM_RTL8197F | ODM_RTL8821C | ODM_RTL8195B |\
+				 ODM_RTL8198F | ODM_RTL8822C | ODM_RTL8812F |\
+				 ODM_RTL8814B | ODM_RTL8197G)
+#define PHYDM_IC_SUPPORT_MU_BFEE (ODM_RTL8822B | ODM_RTL8821C | ODM_RTL8814B |\
+				  ODM_RTL8195B | ODM_RTL8198F | ODM_RTL8822C |\
+				  ODM_RTL8812F)
+#define PHYDM_IC_SUPPORT_MU_BFER (ODM_RTL8822B | ODM_RTL8814B | ODM_RTL8198F |\
+				  ODM_RTL8822C | ODM_RTL8812F)
 
-/*========[Compile time IC flag] ===============================================================================]*/
-/*========[AC/N Support] ===========================*/
+#define PHYDM_IC_SUPPORT_MU (PHYDM_IC_SUPPORT_MU_BFEE |\
+				PHYDM_IC_SUPPORT_MU_BFER)
+/*@[PHYDM API]*/
+#define CMN_API_SUPPORT_IC (ODM_RTL8822B | ODM_RTL8197F | ODM_RTL8192F |\
+			    ODM_RTL8821C | ODM_RTL8195B | ODM_RTL8822C |\
+			    ODM_RTL8198F | ODM_RTL8812F | ODM_RTL8814B |\
+			    ODM_RTL8197G | ODM_RTL8721D)
+
+/*@========[Compile time IC flag] ========================*/
+/*@========[AC-3/AC/N Support] ===========================*/
+
+#if (RTL8814B_SUPPORT || RTL8198F_SUPPORT || RTL8822C_SUPPORT ||\
+	RTL8812F_SUPPORT || RTL8197G_SUPPORT)
+	#define PHYDM_IC_JGR3_SERIES_SUPPORT
+	#if (RTL8814B_SUPPORT || RTL8822C_SUPPORT || RTL8812F_SUPPORT)
+		#define PHYDM_IC_JGR3_80M_SUPPORT
+	#endif
+#endif
+
 #if (DM_ODM_SUPPORT_TYPE == ODM_AP)
 
 	#ifdef RTK_AC_SUPPORT
@@ -423,11 +486,17 @@ enum phydm_ic {
 	#define ODM_IC_11AC_SERIES_SUPPORT	1
 	#define ODM_IC_11N_SERIES_SUPPORT	1
 
+#elif (DM_ODM_SUPPORT_TYPE == ODM_CE) && defined(DM_ODM_CE_MAC80211_V2)
+
+	#define ODM_IC_11AC_SERIES_SUPPORT		1
+	#define ODM_IC_11N_SERIES_SUPPORT			1
+
 #else /*ODM_CE*/
 
-	#if ((RTL8188E_SUPPORT == 1) || \
-	(RTL8723B_SUPPORT == 1) || (RTL8192E_SUPPORT == 1) || (RTL8195A_SUPPORT == 1) || (RTL8703B_SUPPORT == 1) || \
-	(RTL8188F_SUPPORT == 1) || (RTL8723D_SUPPORT == 1) || (RTL8197F_SUPPORT == 1) || (RTL8710B_SUPPORT == 1) || (RTL8192F_SUPPORT == 1))/*jj add 20170822*/
+	#if (RTL8188E_SUPPORT || RTL8723B_SUPPORT || RTL8192E_SUPPORT ||\
+	     RTL8195A_SUPPORT || RTL8703B_SUPPORT || RTL8188F_SUPPORT ||\
+	     RTL8723D_SUPPORT || RTL8197F_SUPPORT || RTL8710B_SUPPORT ||\
+	     RTL8192F_SUPPORT || RTL8721D_SUPPORT)
 		#define ODM_IC_11N_SERIES_SUPPORT	1
 		#define ODM_IC_11AC_SERIES_SUPPORT	0
 	#else
@@ -436,30 +505,35 @@ enum phydm_ic {
 	#endif
 #endif
 
-/*===IC SS Compile Flag, prepare for code size reduction==============*/
-#if ((RTL8188E_SUPPORT == 1) || (RTL8188F_SUPPORT == 1) || (RTL8723B_SUPPORT == 1) || (RTL8703B_SUPPORT == 1) ||\
-	(RTL8723D_SUPPORT == 1) || (RTL8881A_SUPPORT == 1) || (RTL8821A_SUPPORT == 1) || (RTL8821C_SUPPORT == 1) ||\
-	(RTL8195A_SUPPORT == 1) || (RTL8710B_SUPPORT == 1) || (RTL8195B_SUPPORT == 1))
+/*@===IC SS Compile Flag, prepare for code size reduction==============*/
+#if (RTL8188E_SUPPORT || RTL8188F_SUPPORT || RTL8723B_SUPPORT ||\
+	RTL8703B_SUPPORT || RTL8723D_SUPPORT || RTL8881A_SUPPORT ||\
+	RTL8821A_SUPPORT || RTL8821C_SUPPORT || RTL8195A_SUPPORT ||\
+	RTL8710B_SUPPORT || RTL8195B_SUPPORT || RTL8721D_SUPPORT)
 
 	#define PHYDM_COMPILE_IC_1SS
 #endif
 
-#if ((RTL8192E_SUPPORT == 1) || (RTL8197F_SUPPORT == 1) || (RTL8812A_SUPPORT == 1) || (RTL8822B_SUPPORT == 1) || (RTL8192F_SUPPORT == 1))/*jj add 20170822*/
+#if (RTL8192E_SUPPORT || RTL8197F_SUPPORT || RTL8812A_SUPPORT ||\
+	RTL8822B_SUPPORT || RTL8192F_SUPPORT || RTL8822C_SUPPORT ||\
+	RTL8812F_SUPPORT || RTL8197G_SUPPORT)
 	#define PHYDM_COMPILE_IC_2SS
 #endif
 
-/*#define PHYDM_COMPILE_IC_3SS*/
+/*@#define PHYDM_COMPILE_IC_3SS*/
 
-#if ((RTL8814B_SUPPORT == 1) || (RTL8814A_SUPPORT == 1) || (RTL8198F_SUPPORT == 1))
+#if ((RTL8814B_SUPPORT) || (RTL8814A_SUPPORT) || (RTL8198F_SUPPORT))
 	#define PHYDM_COMPILE_IC_4SS
 #endif
 
-/*==[ABOVE N-SS COMPILE FLAG]=============================*/
-#if (defined(PHYDM_COMPILE_IC_1SS) || defined(PHYDM_COMPILE_IC_2SS) || defined(PHYDM_COMPILE_IC_3SS) || defined(PHYDM_COMPILE_IC_4SS))
+/*@==[ABOVE N-SS COMPILE FLAG]=================================================*/
+#if (defined(PHYDM_COMPILE_IC_1SS) || defined(PHYDM_COMPILE_IC_2SS) ||\
+	defined(PHYDM_COMPILE_IC_3SS) || defined(PHYDM_COMPILE_IC_4SS))
 	#define PHYDM_COMPILE_ABOVE_1SS
 #endif
 
-#if (defined(PHYDM_COMPILE_IC_2SS) || defined(PHYDM_COMPILE_IC_3SS) || defined(PHYDM_COMPILE_IC_4SS))
+#if (defined(PHYDM_COMPILE_IC_2SS) || defined(PHYDM_COMPILE_IC_3SS) ||\
+	defined(PHYDM_COMPILE_IC_4SS))
 	#define PHYDM_COMPILE_ABOVE_2SS
 #endif
 
@@ -471,26 +545,36 @@ enum phydm_ic {
 	#define PHYDM_COMPILE_ABOVE_4SS
 #endif
 
-/*========[New Phy-Status Support] =========================================================================]*/
-#if (RTL8824B_SUPPORT == 1)
-	#define CONFIG_PHYSTS_3RD_TYPE		1
-#else
-	#define CONFIG_PHYSTS_3RD_TYPE		0
-#endif
-
-#if ((RTL8197F_SUPPORT == 1) || (RTL8723D_SUPPORT == 1) || (RTL8822B_SUPPORT == 1) || (RTL8821C_SUPPORT == 1) || (RTL8710B_SUPPORT == 1) || (RTL8195B_SUPPORT == 1) || (RTL8192F_SUPPORT == 1))/*jj add 20170822*/
+/*@========[New Phy-Status Support] ========================*/
+#if (RTL8197F_SUPPORT || RTL8723D_SUPPORT || RTL8822B_SUPPORT ||\
+	RTL8821C_SUPPORT || RTL8710B_SUPPORT || RTL8195B_SUPPORT ||\
+	RTL8192F_SUPPORT || RTL8721D_SUPPORT)
 	#define ODM_PHY_STATUS_NEW_TYPE_SUPPORT			1
 #else
 	#define ODM_PHY_STATUS_NEW_TYPE_SUPPORT			0
 #endif
 
-#if (RTL8198F_SUPPORT == 1) || (RTL8814B_SUPPORT == 1)
+#if (RTL8198F_SUPPORT) || (RTL8814B_SUPPORT) || (RTL8822C_SUPPORT) ||\
+	(RTL8812F_SUPPORT) || (RTL8197G_SUPPORT)
 	#define PHYSTS_3RD_TYPE_SUPPORT
 #endif
 
-/*==================================================================================================]*/
+#if (RTL8198F_SUPPORT || RTL8814B_SUPPORT || RTL8822C_SUPPORT ||\
+	RTL8812F_SUPPORT || RTL8197G_SUPPORT)
+	#define BB_RAM_SUPPORT
+#endif
 
-#if ((RTL8822B_SUPPORT == 1) || (RTL8197F_SUPPORT == 1) || (RTL8821C_SUPPORT == 1) || (RTL8192F_SUPPORT == 1))/*jj add 20170822*/
+#if (RTL8821C_SUPPORT || RTL8822B_SUPPORT || RTL8822C_SUPPORT ||\
+	RTL8812F_SUPPORT || RTL8814B_SUPPORT || RTL8195B_SUPPORT ||\
+	RTL8198F_SUPPORT)
+	#define PHYDM_COMPILE_MU
+#endif
+/*@============================================================================*/
+
+#if (RTL8822B_SUPPORT || RTL8197F_SUPPORT || RTL8821C_SUPPORT ||\
+	RTL8192F_SUPPORT || RTL8195B_SUPPORT || RTL8822C_SUPPORT ||\
+	RTL8198F_SUPPORT || RTL8812F_SUPPORT || RTL8814B_SUPPORT ||\
+	RTL8197G_SUPPORT || RTL8721D_SUPPORT)
 #define PHYDM_COMMON_API_SUPPORT
 #endif
 
@@ -511,7 +595,6 @@ enum phydm_ic {
 
 #define	HT_RATE_NUM_1SS		8
 #define	VHT_RATE_NUM_1SS	10
-
 #if (defined(PHYDM_COMPILE_ABOVE_4SS))
 	#define	HT_RATE_NUM	HT_RATE_NUM_4SS
 	#define	VHT_RATE_NUM	VHT_RATE_NUM_4SS
@@ -528,6 +611,17 @@ enum phydm_ic {
 
 #define	LOW_BW_RATE_NUM		VHT_RATE_NUM
 
+enum phydm_ic_ip {
+	PHYDM_IC_N		= 0,
+	PHYDM_IC_AC		= 1,
+	PHYDM_IC_JGR3		= 2
+};
+
+enum phydm_phy_sts_type {
+	PHYDM_PHYSTS_TYPE_1	= 1,
+	PHYDM_PHYSTS_TYPE_2	= 2,
+	PHYDM_PHYSTS_TYPE_3	= 3
+};
 
 /* ODM_CMNINFO_CUT_VER */
 enum odm_cut_version {
@@ -578,17 +672,17 @@ enum odm_wireless_mode {
 };
 #else
 enum odm_wireless_mode {
-	ODM_WM_UNKNOWN		= 0x00,/*0x0*/
-	ODM_WM_A		= BIT(0), /* 0x1*/
-	ODM_WM_B		= BIT(1), /* 0x2*/
-	ODM_WM_G		= BIT(2),/* 0x4*/
-	ODM_WM_AUTO		= BIT(3),/* 0x8*/
-	ODM_WM_N24G		= BIT(4),/* 0x10*/
-	ODM_WM_N5G		= BIT(5),/* 0x20*/
-	ODM_WM_AC_5G		= BIT(6),/* 0x40*/
-	ODM_WM_AC_24G		= BIT(7),/* 0x80*/
-	ODM_WM_AC_ONLY		= BIT(8),/* 0x100*/
-	ODM_WM_MAX		= BIT(11)/* 0x800*/
+	ODM_WM_UNKNOWN		= 0x00,/*@0x0*/
+	ODM_WM_A		= BIT(0), /* @0x1*/
+	ODM_WM_B		= BIT(1), /* @0x2*/
+	ODM_WM_G		= BIT(2),/* @0x4*/
+	ODM_WM_AUTO		= BIT(3),/* @0x8*/
+	ODM_WM_N24G		= BIT(4),/* @0x10*/
+	ODM_WM_N5G		= BIT(5),/* @0x20*/
+	ODM_WM_AC_5G		= BIT(6),/* @0x40*/
+	ODM_WM_AC_24G		= BIT(7),/* @0x80*/
+	ODM_WM_AC_ONLY		= BIT(8),/* @0x100*/
+	ODM_WM_MAX		= BIT(11)/* @0x800*/
 
 };
 #endif
@@ -599,13 +693,12 @@ enum odm_band_type {
 	ODM_BAND_2_4G		= BIT(0),
 	ODM_BAND_5G		= BIT(1),
 #else
-	ODM_BAND_2_4G 		= 0,
+	ODM_BAND_2_4G		= 0,
 	ODM_BAND_5G,
 	ODM_BAND_ON_BOTH,
 	ODM_BANDMAX
 #endif
 };
-
 
 /* ODM_CMNINFO_SEC_CHNL_OFFSET */
 enum phydm_sec_chnl_offset {
@@ -622,7 +715,7 @@ enum odm_security {
 	ODM_SEC_RESERVE		= 3,
 	ODM_SEC_AESCCMP		= 4,
 	ODM_SEC_WEP104		= 5,
-	ODM_WEP_WPA_MIXED    	= 6, /* WEP + WPA */
+	ODM_WEP_WPA_MIXED	= 6, /* WEP + WPA */
 	ODM_SEC_SMS4		= 7,
 };
 
@@ -630,22 +723,22 @@ enum odm_security {
 
 /* ODM_CMNINFO_BOARD_TYPE */
 enum odm_board_type {
-	ODM_BOARD_DEFAULT 	= 0,	  /* The DEFAULT case. */
-	ODM_BOARD_MINICARD  	= BIT(0), /* 0 = non-mini card, 1= mini card. */
-	ODM_BOARD_SLIM      	= BIT(1), /* 0 = non-slim card, 1 = slim card */
-	ODM_BOARD_BT        	= BIT(2), /* 0 = without BT card, 1 = with BT */
-	ODM_BOARD_EXT_PA    	= BIT(3), /* 0 = no 2G ext-PA, 1 = existing 2G ext-PA */
-	ODM_BOARD_EXT_LNA   	= BIT(4), /* 0 = no 2G ext-LNA, 1 = existing 2G ext-LNA */
-	ODM_BOARD_EXT_TRSW  	= BIT(5), /* 0 = no ext-TRSW, 1 = existing ext-TRSW */
-	ODM_BOARD_EXT_PA_5G	= BIT(6), /* 0 = no 5G ext-PA, 1 = existing 5G ext-PA */
-	ODM_BOARD_EXT_LNA_5G 	= BIT(7), /* 0 = no 5G ext-LNA, 1 = existing 5G ext-LNA */
+	ODM_BOARD_DEFAULT	= 0,	  /* The DEFAULT case. */
+	ODM_BOARD_MINICARD	= BIT(0), /* @0 = non-mini card, 1= mini card. */
+	ODM_BOARD_SLIM		= BIT(1), /* @0 = non-slim card, 1 = slim card */
+	ODM_BOARD_BT		= BIT(2), /* @0 = without BT card, 1 = with BT */
+	ODM_BOARD_EXT_PA	= BIT(3), /* @0 = no 2G ext-PA, 1 = existing 2G ext-PA */
+	ODM_BOARD_EXT_LNA	= BIT(4), /* @0 = no 2G ext-LNA, 1 = existing 2G ext-LNA */
+	ODM_BOARD_EXT_TRSW	= BIT(5), /* @0 = no ext-TRSW, 1 = existing ext-TRSW */
+	ODM_BOARD_EXT_PA_5G	= BIT(6), /* @0 = no 5G ext-PA, 1 = existing 5G ext-PA */
+	ODM_BOARD_EXT_LNA_5G	= BIT(7), /* @0 = no 5G ext-LNA, 1 = existing 5G ext-LNA */
 };
 
 enum odm_package_type {
 	ODM_PACKAGE_DEFAULT	= 0,
-	ODM_PACKAGE_QFN68       = BIT(0),
-	ODM_PACKAGE_TFBGA90     = BIT(1),
-	ODM_PACKAGE_TFBGA79     = BIT(2),
+	ODM_PACKAGE_QFN68	= BIT(0),
+	ODM_PACKAGE_TFBGA90	= BIT(1),
+	ODM_PACKAGE_TFBGA79	= BIT(2),
 };
 
 enum odm_type_gpa {
@@ -733,25 +826,24 @@ enum odm_parameter_init {
 	ODM_INIT_FW_SETTING
 };
 
-
 enum phydm_pause_type {
-	PHYDM_PAUSE 		= 1,	/*Pause & Set new value*/
-	PHYDM_PAUSE_NO_SET 	= 2,	/*Pause & Stay in current value*/
-	PHYDM_RESUME 		= 3
+	PHYDM_PAUSE		= 1,	/*Pause & Set new value*/
+	PHYDM_PAUSE_NO_SET	= 2,	/*Pause & Stay in current value*/
+	PHYDM_RESUME		= 3
 };
 
 enum phydm_pause_level {
-	PHYDM_PAUSE_RELEASE 	= -1,
-	PHYDM_PAUSE_LEVEL_0 	= 0,	/* Low Priority function */
-	PHYDM_PAUSE_LEVEL_1 	= 1,	/* Middle Priority function */
-	PHYDM_PAUSE_LEVEL_2 	= 2,	/* High priority function (ex: Check hang function) */
-	PHYDM_PAUSE_LEVEL_3 	= 3,	/* Debug function (the highest priority) */
-	PHYDM_PAUSE_MAX_NUM 	= 4
+	PHYDM_PAUSE_RELEASE	= -1,
+	PHYDM_PAUSE_LEVEL_0	= 0,	/* @Low Priority function */
+	PHYDM_PAUSE_LEVEL_1	= 1,	/* @Middle Priority function */
+	PHYDM_PAUSE_LEVEL_2	= 2,	/* @High priority function (ex: Check hang function) */
+	PHYDM_PAUSE_LEVEL_3	= 3,	/* @Debug function (the highest priority) */
+	PHYDM_PAUSE_MAX_NUM	= 4
 };
 
 enum phydm_dis_hw_fun {
-	HW_FUN_DIS 		= 0,	/*Disable a cetain HW function & backup the original value*/
-	HW_FUN_RESUME 		= 1	/*Revert */
+	HW_FUN_DIS		= 0,	/*@Disable a cetain HW function & backup the original value*/
+	HW_FUN_RESUME		= 1	/*Revert */
 };
 
 #endif

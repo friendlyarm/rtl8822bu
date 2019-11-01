@@ -64,6 +64,8 @@
 	#define BIT(x)	(1 << (x))
 #endif
 
+#define CHECK_BIT(a, b) (!!((a) & (b)))
+
 #define BIT0	0x00000001
 #define BIT1	0x00000002
 #define BIT2	0x00000004
@@ -578,6 +580,7 @@ static inline int largest_bit(u32 bitmask)
 	return i;
 }
 
+#define rtw_abs(a) (a < 0 ? -a : a)
 #define rtw_min(a, b) ((a > b) ? b : a)
 #define rtw_is_range_a_in_b(hi_a, lo_a, hi_b, lo_b) (((hi_a) <= (hi_b)) && ((lo_a) >= (lo_b)))
 #define rtw_is_range_overlap(hi_a, lo_a, hi_b, lo_b) (((hi_a) > (lo_b)) && ((lo_a) < (hi_b)))
@@ -589,6 +592,7 @@ static inline int largest_bit(u32 bitmask)
 #define MAC_ARG(x) ((u8 *)(x))[0], ((u8 *)(x))[1], ((u8 *)(x))[2], ((u8 *)(x))[3], ((u8 *)(x))[4], ((u8 *)(x))[5]
 #endif
 
+bool rtw_macaddr_is_larger(const u8 *a, const u8 *b);
 
 extern void rtw_suspend_lock_init(void);
 extern void rtw_suspend_lock_uninit(void);
@@ -753,6 +757,18 @@ struct map_t {
 
 int map_readN(const struct map_t *map, u16 offset, u16 len, u8 *buf);
 u8 map_read8(const struct map_t *map, u16 offset);
+
+struct blacklist_ent {
+	_list list;
+	u8 addr[ETH_ALEN];
+	systime exp_time;
+};
+
+int rtw_blacklist_add(_queue *blist, const u8 *addr, u32 timeout_ms);
+int rtw_blacklist_del(_queue *blist, const u8 *addr);
+int rtw_blacklist_search(_queue *blist, const u8 *addr);
+void rtw_blacklist_flush(_queue *blist);
+void dump_blacklist(void *sel, _queue *blist, const char *title);
 
 /* String handler */
 

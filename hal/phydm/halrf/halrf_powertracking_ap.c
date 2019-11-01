@@ -736,7 +736,9 @@ u8 cck_swing_table_ch14_92e[CCK_TABLE_SIZE_92E][8] = {
 };
 #endif
 
-#if (RTL8814A_SUPPORT == 1 || RTL8822B_SUPPORT == 1 || RTL8821C_SUPPORT == 1)
+#if (RTL8814A_SUPPORT == 1 || RTL8822B_SUPPORT == 1 ||\
+	RTL8821C_SUPPORT == 1 || RTL8198F_SUPPORT == 1 ||\
+	RTL8814B_SUPPORT == 1)
 u32 tx_scaling_table_jaguar[TXSCALE_TABLE_SIZE] = {
 	0x081, /* 0,  -12.0dB */
 	0x088, /* 1,  -11.5dB */
@@ -979,7 +981,7 @@ get_swing_index(
 			break;
 	}
 
-	PHYDM_DBG(dm, ODM_COMP_TX_PWR_TRACK, "bb_swing=0x%x bbswing_index=%d\n", bb_swing, i);
+	RF_DBG(dm, DBG_RF_TX_PWR_TRACK, "bb_swing=0x%x bbswing_index=%d\n", bb_swing, i);
 
 
 	return i;
@@ -1012,7 +1014,7 @@ odm_txpowertracking_thermal_meter_init(
 
 	if (*(dm->mp_mode) == false)
 		hal_data->txpowertrack_control = true;
-	PHYDM_DBG(dm, COMP_POWER_TRACKING, "mgnt_info->is_txpowertracking = %d\n", mgnt_info->is_txpowertracking);
+	RF_DBG(dm, COMP_POWER_TRACKING, "mgnt_info->is_txpowertracking = %d\n", mgnt_info->is_txpowertracking);
 #elif (DM_ODM_SUPPORT_TYPE == ODM_CE)
 #ifdef CONFIG_RTL8188E
 	{
@@ -1030,7 +1032,7 @@ odm_txpowertracking_thermal_meter_init(
 		void		*adapter = dm->adapter;
 		HAL_DATA_TYPE	*hal_data = GET_HAL_DATA(((PADAPTER)adapter));
 		struct dm_priv	*pdmpriv = &hal_data->dmpriv;
-
+		
 		pdmpriv->is_txpowertracking = true;
 		pdmpriv->tx_powercount = 0;
 		pdmpriv->is_txpowertracking_init = false;
@@ -1100,7 +1102,7 @@ odm_txpowertracking_thermal_meter_init(
 	}
 	cali_info->bb_swing_idx_cck = cali_info->default_cck_index;
 
-	PHYDM_DBG(dm, ODM_COMP_TX_PWR_TRACK, "cali_info->default_ofdm_index=%d cali_info->default_cck_index=%d\n", cali_info->default_ofdm_index, cali_info->default_cck_index);
+	RF_DBG(dm, DBG_RF_TX_PWR_TRACK, "cali_info->default_ofdm_index=%d cali_info->default_cck_index=%d\n", cali_info->default_ofdm_index, cali_info->default_cck_index);
 
 	cali_info->tm_trigger = 0;
 }
@@ -1206,8 +1208,8 @@ odm_txpowertracking_check_ap(
 #if (DM_ODM_SUPPORT_TYPE == ODM_AP)
 	struct rtl8192cd_priv	*priv		= dm->priv;
 
-#if ((RTL8188E_SUPPORT == 1) || (RTL8192E_SUPPORT == 1) || (RTL8812A_SUPPORT == 1) || (RTL8881A_SUPPORT == 1) || (RTL8814A_SUPPORT == 1) || (RTL8197F_SUPPORT == 1) || (RTL8192F_SUPPORT == 1))
-	if (dm->support_ic_type & (ODM_RTL8188E | ODM_RTL8192E | ODM_RTL8812 | ODM_RTL8881A | ODM_RTL8814A | ODM_RTL8197F | ODM_RTL8822B | ODM_RTL8821C | ODM_RTL8192F))
+#if ((RTL8188E_SUPPORT == 1) || (RTL8192E_SUPPORT == 1) || (RTL8812A_SUPPORT == 1) || (RTL8881A_SUPPORT == 1) || (RTL8814A_SUPPORT == 1) || (RTL8197F_SUPPORT == 1) || (RTL8192F_SUPPORT == 1) || (RTL8198F_SUPPORT == 1))
+	if (dm->support_ic_type & (ODM_RTL8188E | ODM_RTL8192E | ODM_RTL8812 | ODM_RTL8881A | ODM_RTL8814A | ODM_RTL8197F | ODM_RTL8822B | ODM_RTL8821C | ODM_RTL8192F | ODM_RTL8198F))
 		odm_txpowertracking_callback_thermal_meter(dm);
 	else
 #endif

@@ -15,7 +15,7 @@
 
 #include "halmac_usb_88xx.h"
 
-#if HALMAC_88XX_SUPPORT
+#if (HALMAC_88XX_SUPPORT && HALMAC_USB_SUPPORT)
 
 enum usb_burst_size {
 	USB_BURST_SIZE_3_0 = 0x0,

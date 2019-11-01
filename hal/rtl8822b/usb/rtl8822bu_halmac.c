@@ -169,6 +169,8 @@ static u8 usb_write_data_not_xmitframe(void *d, u8 *pBuf, u32 size, u8 qsel)
 		if (!buf)
 			return _FALSE;
 
+		_rtw_memcpy(buf + desclen, pBuf, size);
+
 		SET_TX_DESC_TXPKTSIZE_8822B(buf, size);
 	} else {
 

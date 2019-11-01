@@ -14,6 +14,12 @@
  ******************************************************************************/
 
 #include "../../halmac_type.h"
+#if HALMAC_USB_SUPPORT
+#include "halmac_usb_8822b.h"
+#endif
+#if HALMAC_PCIE_SUPPORT
+#include "halmac_pcie_8822b.h"
+#endif
 
 /**
  * ============ip sel item list============

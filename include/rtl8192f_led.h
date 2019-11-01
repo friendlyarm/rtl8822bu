@@ -23,10 +23,20 @@
 /* ********************************************************************************
  * Interface to manipulate LED objects.
  * ******************************************************************************** */
+#ifdef CONFIG_USB_HCI
+void rtl8192fu_InitSwLeds(PADAPTER padapter);
+void rtl8192fu_DeInitSwLeds(PADAPTER padapter);
+#endif
 
 #ifdef CONFIG_SDIO_HCI
 void rtl8192fs_InitSwLeds(PADAPTER padapter);
 void rtl8192fs_DeInitSwLeds(PADAPTER padapter);
 #endif
+
+#ifdef CONFIG_PCI_HCI
+void rtl8192fe_InitSwLeds(PADAPTER padapter);
+void rtl8192fe_DeInitSwLeds(PADAPTER padapter);
+#endif
 #endif /*#ifdef CONFIG_RTW_SW_LED*/
+
 #endif

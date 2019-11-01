@@ -113,7 +113,6 @@ void rtw_odm_adaptivity_config_msg(void *sel, _adapter *adapter)
 bool rtw_odm_adaptivity_needed(_adapter *adapter)
 {
 	struct registry_priv *regsty = &adapter->registrypriv;
-	struct mlme_priv *mlme = &adapter->mlmepriv;
 	bool ret = _FALSE;
 
 	if (regsty->adaptivity_en == RTW_ADAPTIVITY_EN_ENABLE)
@@ -179,10 +178,10 @@ void rtw_odm_releasespinlock(_adapter *adapter,	enum rt_spinlock_type type)
 	}
 }
 
-inline u8 rtw_odm_get_dfs_domain(_adapter *adapter)
+inline u8 rtw_odm_get_dfs_domain(struct dvobj_priv *dvobj)
 {
 #ifdef CONFIG_DFS_MASTER
-	struct dm_struct *pDM_Odm = adapter_to_phydm(adapter);
+	struct dm_struct *pDM_Odm = dvobj_to_phydm(dvobj);
 
 	return pDM_Odm->dfs_region_domain;
 #else
@@ -190,10 +189,10 @@ inline u8 rtw_odm_get_dfs_domain(_adapter *adapter)
 #endif
 }
 
-inline u8 rtw_odm_dfs_domain_unknown(_adapter *adapter)
+inline u8 rtw_odm_dfs_domain_unknown(struct dvobj_priv *dvobj)
 {
 #ifdef CONFIG_DFS_MASTER
-	return rtw_odm_get_dfs_domain(adapter) == PHYDM_DFS_DOMAIN_UNKNOWN;
+	return rtw_odm_get_dfs_domain(dvobj) == PHYDM_DFS_DOMAIN_UNKNOWN;
 #else
 	return 1;
 #endif
@@ -219,6 +218,11 @@ inline VOID rtw_odm_radar_detect_enable(_adapter *adapter)
 inline BOOLEAN rtw_odm_radar_detect(_adapter *adapter)
 {
 	return phydm_radar_detect(adapter_to_phydm(adapter));
+}
+
+inline u8 rtw_odm_radar_detect_polling_int_ms(struct dvobj_priv *dvobj)
+{
+	return phydm_dfs_polling_time(dvobj_to_phydm(dvobj));
 }
 #endif /* CONFIG_DFS_MASTER */
 
@@ -263,7 +267,7 @@ void rtw_odm_parse_rx_phy_status_chinfo(union recv_frame *rframe, u8 *phys)
 		*/
 
 		if ((*phys & 0xf) == 0) {
-			struct phy_status_rpt_jaguar2_type0 *phys_t0 = (struct phy_status_rpt_jaguar2_type0 *)phys;
+			struct phy_sts_rpt_jgr2_type0 *phys_t0 = (struct phy_sts_rpt_jgr2_type0 *)phys;
 
 			if (DBG_RX_PHYSTATUS_CHINFO) {
 				RTW_PRINT("phys_t%u ta="MAC_FMT" %s, %s(band:%u, ch:%u, l_rxsc:%u)\n"
@@ -276,7 +280,7 @@ void rtw_odm_parse_rx_phy_status_chinfo(union recv_frame *rframe, u8 *phys)
 			}
 
 		} else if ((*phys & 0xf) == 1) {
-			struct phy_status_rpt_jaguar2_type1 *phys_t1 = (struct phy_status_rpt_jaguar2_type1 *)phys;
+			struct phy_sts_rpt_jgr2_type1 *phys_t1 = (struct phy_sts_rpt_jgr2_type1 *)phys;
 			u8 rxsc = (attrib->data_rate > DESC_RATE11M && attrib->data_rate < DESC_RATEMCS0) ? phys_t1->l_rxsc : phys_t1->ht_rxsc;
 			u8 pkt_cch = 0;
 			u8 pkt_bw = CHANNEL_WIDTH_20;
@@ -397,7 +401,7 @@ type1_end:
 				attrib->ch = pkt_cch;
 
 		} else {
-			struct phy_status_rpt_jaguar2_type2 *phys_t2 = (struct phy_status_rpt_jaguar2_type2 *)phys;
+			struct phy_sts_rpt_jgr2_type2 *phys_t2 = (struct phy_sts_rpt_jgr2_type2 *)phys;
 
 			if (DBG_RX_PHYSTATUS_CHINFO) {
 				RTW_PRINT("phys_t%u ta="MAC_FMT" %s, %s(band:%u, ch:%u, l_rxsc:%u, ht_rxsc:%u)\n"
@@ -413,3 +417,4 @@ type1_end:
 #endif /* (ODM_PHY_STATUS_NEW_TYPE_SUPPORT == 1) */
 
 }
+

@@ -35,6 +35,12 @@
 
 #define HALMAC_INLINE	inline
 
+/*
+ * Ignore following typedef because Linux already have these
+ * u8, u16, u32, s8, s16, s32
+ * __le16, __le32, __be16, __be32
+ */
+
 #define HALMAC_PLATFORM_LITTLE_ENDIAN	1
 #define HALMAC_PLATFORM_BIG_ENDIAN	0
 
@@ -78,3 +84,4 @@
 typedef _mutex		HALMAC_MUTEX;
 
 #endif /* _HALMAC_2_PLATFORM_H_ */
+

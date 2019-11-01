@@ -73,18 +73,6 @@ u32 rtw_atoi(u8 *s)
 
 }
 
-#ifdef PLATFORM_LINUX
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
-void compat_timer_wrapper(struct timer_list *compat)
-{
-	_timer *ptimer = container_of(compat, _timer, compat);
-
-	if (ptimer->function)
-		ptimer->function(ptimer->data);
-}
-#endif
-#endif
-
 inline void *_rtw_vmalloc(u32 sz)
 {
 	void *pbuf;
@@ -1820,6 +1808,20 @@ void rtw_yield_os(void)
 #endif
 }
 
+bool rtw_macaddr_is_larger(const u8 *a, const u8 *b)
+{
+	u32 va, vb;
+
+	va = be32_to_cpu(*((u32 *)a));
+	vb = be32_to_cpu(*((u32 *)b));
+	if (va > vb)
+		return 1;
+	else if (va < vb)
+		return 0;
+
+	return be16_to_cpu(*((u16 *)(a + 4))) > be16_to_cpu(*((u16 *)(b + 4)));
+}
+
 #define RTW_SUSPEND_LOCK_NAME "rtw_wifi"
 #define RTW_SUSPEND_TRAFFIC_LOCK_NAME "rtw_wifi_traffic"
 #define RTW_SUSPEND_RESUME_LOCK_NAME "rtw_wifi_resume"
@@ -2803,7 +2805,7 @@ int map_readN(const struct map_t *map, u16 offset, u16 len, u8 *buf)
 			else
 				c_len = seg->sa + seg->len - offset;
 		}
-
+			
 		_rtw_memcpy(c_dst, c_src, c_len);
 	}
 
@@ -2840,6 +2842,167 @@ u8 map_read8(const struct map_t *map, u16 offset)
 
 exit:
 	return val;
+}
+
+int rtw_blacklist_add(_queue *blist, const u8 *addr, u32 timeout_ms)
+{
+	struct blacklist_ent *ent;
+	_list *list, *head;
+	u8 exist = _FALSE, timeout = _FALSE;
+
+	enter_critical_bh(&blist->lock);
+
+	head = &blist->queue;
+	list = get_next(head);
+	while (rtw_end_of_queue_search(head, list) == _FALSE) {
+		ent = LIST_CONTAINOR(list, struct blacklist_ent, list);
+		list = get_next(list);
+
+		if (_rtw_memcmp(ent->addr, addr, ETH_ALEN) == _TRUE) {
+			exist = _TRUE;
+			if (rtw_time_after(rtw_get_current_time(), ent->exp_time))
+				timeout = _TRUE;
+			ent->exp_time = rtw_get_current_time()
+				+ rtw_ms_to_systime(timeout_ms);
+			break;
+		}
+
+		if (rtw_time_after(rtw_get_current_time(), ent->exp_time)) {
+			rtw_list_delete(&ent->list);
+			rtw_mfree(ent, sizeof(struct blacklist_ent));
+		}
+	}
+
+	if (exist == _FALSE) {
+		ent = rtw_malloc(sizeof(struct blacklist_ent));
+		if (ent) {
+			_rtw_memcpy(ent->addr, addr, ETH_ALEN);
+			ent->exp_time = rtw_get_current_time()
+				+ rtw_ms_to_systime(timeout_ms);
+			rtw_list_insert_tail(&ent->list, head);
+		}
+	}
+
+	exit_critical_bh(&blist->lock);
+
+exit:
+	return (exist == _TRUE && timeout == _FALSE) ? RTW_ALREADY : (ent ? _SUCCESS : _FAIL);
+}
+
+int rtw_blacklist_del(_queue *blist, const u8 *addr)
+{
+	struct blacklist_ent *ent = NULL;
+	_list *list, *head;
+	u8 exist = _FALSE;
+
+	enter_critical_bh(&blist->lock);
+	head = &blist->queue;
+	list = get_next(head);
+	while (rtw_end_of_queue_search(head, list) == _FALSE) {
+		ent = LIST_CONTAINOR(list, struct blacklist_ent, list);
+		list = get_next(list);
+
+		if (_rtw_memcmp(ent->addr, addr, ETH_ALEN) == _TRUE) {
+			rtw_list_delete(&ent->list);
+			rtw_mfree(ent, sizeof(struct blacklist_ent));
+			exist = _TRUE;
+			break;
+		}
+
+		if (rtw_time_after(rtw_get_current_time(), ent->exp_time)) {
+			rtw_list_delete(&ent->list);
+			rtw_mfree(ent, sizeof(struct blacklist_ent));
+		}
+	}
+
+	exit_critical_bh(&blist->lock);
+
+exit:
+	return exist == _TRUE ? _SUCCESS : RTW_ALREADY;
+}
+
+int rtw_blacklist_search(_queue *blist, const u8 *addr)
+{
+	struct blacklist_ent *ent = NULL;
+	_list *list, *head;
+	u8 exist = _FALSE;
+
+	enter_critical_bh(&blist->lock);
+	head = &blist->queue;
+	list = get_next(head);
+	while (rtw_end_of_queue_search(head, list) == _FALSE) {
+		ent = LIST_CONTAINOR(list, struct blacklist_ent, list);
+		list = get_next(list);
+
+		if (_rtw_memcmp(ent->addr, addr, ETH_ALEN) == _TRUE) {
+			if (rtw_time_after(rtw_get_current_time(), ent->exp_time)) {
+				rtw_list_delete(&ent->list);
+				rtw_mfree(ent, sizeof(struct blacklist_ent));
+			} else
+				exist = _TRUE;
+			break;
+		}
+
+		if (rtw_time_after(rtw_get_current_time(), ent->exp_time)) {
+			rtw_list_delete(&ent->list);
+			rtw_mfree(ent, sizeof(struct blacklist_ent));
+		}
+	}
+
+	exit_critical_bh(&blist->lock);
+
+exit:
+	return exist;
+}
+
+void rtw_blacklist_flush(_queue *blist)
+{
+	struct blacklist_ent *ent;
+	_list *list, *head;
+	_list tmp;
+
+	_rtw_init_listhead(&tmp);
+
+	enter_critical_bh(&blist->lock);
+	rtw_list_splice_init(&blist->queue, &tmp);
+	exit_critical_bh(&blist->lock);
+
+	head = &tmp;
+	list = get_next(head);
+	while (rtw_end_of_queue_search(head, list) == _FALSE) {
+		ent = LIST_CONTAINOR(list, struct blacklist_ent, list);
+		list = get_next(list);
+		rtw_list_delete(&ent->list);
+		rtw_mfree(ent, sizeof(struct blacklist_ent));
+	}
+}
+
+void dump_blacklist(void *sel, _queue *blist, const char *title)
+{
+	struct blacklist_ent *ent = NULL;
+	_list *list, *head;
+
+	enter_critical_bh(&blist->lock);
+	head = &blist->queue;
+	list = get_next(head);
+
+	if (rtw_end_of_queue_search(head, list) == _FALSE) {
+		if (title)
+			RTW_PRINT_SEL(sel, "%s:\n", title);
+	
+		while (rtw_end_of_queue_search(head, list) == _FALSE) {
+			ent = LIST_CONTAINOR(list, struct blacklist_ent, list);
+			list = get_next(list);
+
+			if (rtw_time_after(rtw_get_current_time(), ent->exp_time))
+				RTW_PRINT_SEL(sel, MAC_FMT" expired\n", MAC_ARG(ent->addr));
+			else
+				RTW_PRINT_SEL(sel, MAC_FMT" %u\n", MAC_ARG(ent->addr)
+					, rtw_get_remaining_time_ms(ent->exp_time));
+		}
+
+	}
+	exit_critical_bh(&blist->lock);
 }
 
 /**
@@ -2970,3 +3133,4 @@ int hexstr2bin(const char *hex, u8 *buf, size_t len)
 	}
 	return 0;
 }
+

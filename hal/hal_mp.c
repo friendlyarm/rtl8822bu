@@ -48,6 +48,9 @@
 	#ifdef CONFIG_RTL8188F
 		#include <rtl8188f_hal.h>
 	#endif
+	#ifdef CONFIG_RTL8188GTV
+		#include <rtl8188gtv_hal.h>
+	#endif
 	#ifdef CONFIG_RTL8192F
 		#include <rtl8192f_hal.h>
 	#endif
@@ -190,7 +193,7 @@ void hal_mpt_CCKTxPowerAdjust(PADAPTER Adapter, BOOLEAN bInCH14)
 					     pHalData->RegForRecover[i].value);
 			}
 		}
-	} else if (IS_HARDWARE_TYPE_8188F(Adapter)) {
+	} else if (IS_HARDWARE_TYPE_8188F(Adapter) || IS_HARDWARE_TYPE_8188GTV(Adapter)) {
 		/* get current cck swing value and check 0xa22 & 0xa23 later to match the table.*/
 		CurrCCKSwingVal = read_bbreg(Adapter, rCCK0_TxFilter1, bMaskHWord);
 		CCKSwingIndex = 20; /* default index */
@@ -326,9 +329,18 @@ void hal_mpt_SetChannel(PADAPTER pAdapter)
 
 	pHalData->bSwChnl = _TRUE;
 	pHalData->bSetChnlBW = _TRUE;
-	rtw_hal_set_chnl_bw(pAdapter, channel, bandwidth, 0, 0);
+
+#ifdef CONFIG_RTL8822B
+	if (bandwidth == 2) {
+		rtw_hal_set_chnl_bw(pAdapter, channel, bandwidth, HAL_PRIME_CHNL_OFFSET_LOWER, HAL_PRIME_CHNL_OFFSET_UPPER);
+	} else if (bandwidth == 1) {
+		rtw_hal_set_chnl_bw(pAdapter, channel, bandwidth, HAL_PRIME_CHNL_OFFSET_UPPER, 0);
+	} else
+#endif
+		rtw_hal_set_chnl_bw(pAdapter, channel, bandwidth, pmp->prime_channel_offset, 0);
 
 	hal_mpt_CCKTxPowerAdjust(pAdapter, pHalData->bCCKinCH14);
+	rtw_btcoex_wifionly_scan_notify(pAdapter);
 
 }
 
@@ -346,9 +358,19 @@ void hal_mpt_SetBandwidth(PADAPTER pAdapter)
 
 	pHalData->bSwChnl = _TRUE;
 	pHalData->bSetChnlBW = _TRUE;
-	rtw_hal_set_chnl_bw(pAdapter, channel, bandwidth, 0, 0);
+
+#ifdef CONFIG_RTL8822B
+	if (bandwidth == 2) {
+		rtw_hal_set_chnl_bw(pAdapter, channel, bandwidth, HAL_PRIME_CHNL_OFFSET_LOWER, HAL_PRIME_CHNL_OFFSET_UPPER);
+	} else if (bandwidth == 1) {
+		rtw_hal_set_chnl_bw(pAdapter, channel, bandwidth, HAL_PRIME_CHNL_OFFSET_UPPER, 0);
+	} else
+#endif
+		rtw_hal_set_chnl_bw(pAdapter, channel, bandwidth, pmp->prime_channel_offset, 0);
 
 	hal_mpt_SwitchRfSetting(pAdapter);
+	rtw_btcoex_wifionly_scan_notify(pAdapter);
+
 }
 
 void mpt_SetTxPower_Old(PADAPTER pAdapter, MPT_TXPWR_DEF Rate, u8 *pTxPower)
@@ -423,7 +445,8 @@ mpt_SetTxPower(
 
 	if (IS_HARDWARE_TYPE_8814A(pAdapter))
 		EndPath = RF_PATH_D;
-	else if (IS_HARDWARE_TYPE_8188F(pAdapter) || IS_HARDWARE_TYPE_8723D(pAdapter) || IS_HARDWARE_TYPE_8821C(pAdapter))
+	else if (IS_HARDWARE_TYPE_8188F(pAdapter) || IS_HARDWARE_TYPE_8188GTV(pAdapter)
+		|| IS_HARDWARE_TYPE_8723D(pAdapter) || IS_HARDWARE_TYPE_8821C(pAdapter))
 		EndPath = RF_PATH_A;
 
 	switch (Rate) {
@@ -515,7 +538,9 @@ void hal_mpt_SetTxPower(PADAPTER pAdapter)
 		    IS_HARDWARE_TYPE_8723B(pAdapter) ||
 		    IS_HARDWARE_TYPE_8192E(pAdapter) ||
 		    IS_HARDWARE_TYPE_8703B(pAdapter) ||
-		    IS_HARDWARE_TYPE_8188F(pAdapter)) {
+		    IS_HARDWARE_TYPE_8188F(pAdapter) ||
+		    IS_HARDWARE_TYPE_8188GTV(pAdapter)
+		) {
 			u8 path = (pHalData->antenna_tx_path == ANTENNA_A) ? (RF_PATH_A) : (RF_PATH_B);
 
 			RTW_INFO("===> MPT_ProSetTxPower: Old\n");
@@ -551,7 +576,7 @@ void hal_mpt_SetDataRate(PADAPTER pAdapter)
 
 	hal_mpt_CCKTxPowerAdjust(pAdapter, pHalData->bCCKinCH14);
 #ifdef CONFIG_RTL8723B
-	if (IS_HARDWARE_TYPE_8723B(pAdapter) || IS_HARDWARE_TYPE_8188F(pAdapter)) {
+	if (IS_HARDWARE_TYPE_8723B(pAdapter)) {
 		if (IS_CCK_RATE(DataRate)) {
 			if (pMptCtx->mpt_rf_path == RF_PATH_A)
 				phy_set_rf_reg(pAdapter, RF_PATH_A, 0x51, 0xF, 0x6);
@@ -1728,7 +1753,7 @@ void hal_mpt_SetSingleToneTx(PADAPTER pAdapter, u8 bStart)
 				phy_set_rf_reg(pAdapter, RF_PATH_A, RF_AC, 0xF0000, 0x2); /* Tx mode */
 				phy_set_rf_reg(pAdapter, RF_PATH_A, 0x53, 0xF000, 0x1); /* RF LO enabled */
 			}
-		} else if (IS_HARDWARE_TYPE_8188F(pAdapter)) {
+		} else if (IS_HARDWARE_TYPE_8188F(pAdapter) || IS_HARDWARE_TYPE_8188GTV(pAdapter)) {
 			/*Set BB REG 88C: Prevent SingleTone Fail*/
 			phy_set_bb_reg(pAdapter, rFPGA0_AnalogParameter4, 0xF00000, 0xF);
 			phy_set_rf_reg(pAdapter, pMptCtx->mpt_rf_path, lna_low_gain_3, BIT1, 0x1);
@@ -1851,7 +1876,7 @@ void hal_mpt_SetSingleToneTx(PADAPTER pAdapter, u8 bStart)
 				phy_set_rf_reg(pAdapter, RF_PATH_A, RF_AC, 0xF0000, 0x3); /* Rx mode */
 				phy_set_rf_reg(pAdapter, RF_PATH_A, 0x53, 0xF000, 0x0); /* RF LO disabled */
 			}
-		} else if (IS_HARDWARE_TYPE_8188F(pAdapter)) {
+		} else if (IS_HARDWARE_TYPE_8188F(pAdapter) || IS_HARDWARE_TYPE_8188GTV(pAdapter)) {
 			phy_set_rf_reg(pAdapter, pMptCtx->mpt_rf_path, RF_AC, 0xF0000, 0x3); /*Tx mode*/
 			phy_set_rf_reg(pAdapter, pMptCtx->mpt_rf_path, lna_low_gain_3, BIT1, 0x0); /*RF LO disabled*/
 			/*Set BB REG 88C: Prevent SingleTone Fail*/
@@ -2144,52 +2169,58 @@ void mpt_ProSetPMacTx(PADAPTER	Adapter)
 	PRINT_DATA("Src Address", Adapter->mac_addr, ETH_ALEN);
 	PRINT_DATA("Dest Address", PMacTxInfo.MacAddress, ETH_ALEN);
 #endif
-	if (Adapter->mppriv.pktInterval != 0)
-		PMacTxInfo.PacketPeriod = Adapter->mppriv.pktInterval;
+	if (pmppriv->pktInterval != 0)
+		PMacTxInfo.PacketPeriod = pmppriv->pktInterval;
+
+    	if (pmppriv->tx.count != 0)
+        	PMacTxInfo.PacketCount = pmppriv->tx.count;
 
 	RTW_INFO("SGI %d bSPreamble %d bSTBC %d bLDPC %d NDP_sound %d\n", PMacTxInfo.bSGI, PMacTxInfo.bSPreamble, PMacTxInfo.bSTBC, PMacTxInfo.bLDPC, PMacTxInfo.NDP_sound);
 	RTW_INFO("TXSC %d BandWidth %d PacketPeriod %d PacketCount %d PacketLength %d PacketPattern %d\n", PMacTxInfo.TX_SC, PMacTxInfo.BandWidth, PMacTxInfo.PacketPeriod, PMacTxInfo.PacketCount,
 		 PMacTxInfo.PacketLength, PMacTxInfo.PacketPattern);
 
 	if (PMacTxInfo.bEnPMacTx == FALSE) {
-			pmppriv->mode = MP_ON;
-		if (PMacTxInfo.Mode == CONTINUOUS_TX) {
+		if (pMptCtx->HWTxmode == CONTINUOUS_TX) {
 			phy_set_bb_reg(Adapter, 0xb04, 0xf, 2);			/*	TX Stop*/
-			if (IS_MPT_CCK_RATE(PMacTxInfo.TX_RATE))
+			if (IS_MPT_CCK_RATE(pMptCtx->mpt_rate_index))
 				mpt_StopCckContTx(Adapter);
 			else
 				mpt_StopOfdmContTx(Adapter);
-		} else if (IS_MPT_CCK_RATE(PMacTxInfo.TX_RATE)) {
+		} else if (IS_MPT_CCK_RATE(pMptCtx->mpt_rate_index)) {
 			u4bTmp = phy_query_bb_reg(Adapter, 0xf50, bMaskLWord);
 			phy_set_bb_reg(Adapter, 0xb1c, bMaskLWord, u4bTmp + 50);
 			phy_set_bb_reg(Adapter, 0xb04, 0xf, 2);		/*TX Stop*/
 		} else
 			phy_set_bb_reg(Adapter, 0xb04, 0xf, 2);		/*	TX Stop*/
 
-		if (PMacTxInfo.Mode == OFDM_Single_Tone_TX) {
+		if (pMptCtx->HWTxmode == OFDM_Single_Tone_TX) {
 			/* Stop HW TX -> Stop Continuous TX -> Stop RF Setting*/
-			if (IS_MPT_CCK_RATE(PMacTxInfo.TX_RATE))
+			if (IS_MPT_CCK_RATE(pMptCtx->mpt_rate_index))
 				mpt_StopCckContTx(Adapter);
 			else
 				mpt_StopOfdmContTx(Adapter);
 
 			mpt_SetSingleTone_8814A(Adapter, FALSE, TRUE);
 		}
-
+		pMptCtx->HWTxmode = TEST_NONE;
 		return;
 	}
 
+    	pMptCtx->mpt_rate_index = PMacTxInfo.TX_RATE;
+
 	if (PMacTxInfo.Mode == CONTINUOUS_TX) {
-		pmppriv->mode = MP_CONTINUOUS_TX;
+		pMptCtx->HWTxmode = CONTINUOUS_TX;
 		PMacTxInfo.PacketCount = 1;
+
+        	hal_mpt_SetTxPower(Adapter);
 
 		if (IS_MPT_CCK_RATE(PMacTxInfo.TX_RATE))
 			mpt_StartCckContTx(Adapter);
 		else
 			mpt_StartOfdmContTx(Adapter);
 	} else if (PMacTxInfo.Mode == OFDM_Single_Tone_TX) {
-		pmppriv->mode = MP_SINGLE_TONE_TX;
 		/* Continuous TX -> HW TX -> RF Setting */
+		pMptCtx->HWTxmode = OFDM_Single_Tone_TX;
 		PMacTxInfo.PacketCount = 1;
 
 		if (IS_MPT_CCK_RATE(PMacTxInfo.TX_RATE))
@@ -2197,7 +2228,7 @@ void mpt_ProSetPMacTx(PADAPTER	Adapter)
 		else
 			mpt_StartOfdmContTx(Adapter);
 	} else if (PMacTxInfo.Mode == PACKETS_TX) {
-		pmppriv->mode = MP_PACKET_TX;
+		pMptCtx->HWTxmode = PACKETS_TX;
 		if (IS_MPT_CCK_RATE(PMacTxInfo.TX_RATE) && PMacTxInfo.PacketCount == 0)
 			PMacTxInfo.PacketCount = 0xffff;
 	}
@@ -2312,6 +2343,16 @@ void mpt_ProSetPMacTx(PADAPTER	Adapter)
 		else if (IS_MPT_HT_RATE(PMacTxInfo.TX_RATE))
 			phy_set_bb_reg(Adapter, offset, 0xc0000000, 1);
 		else if (IS_MPT_VHT_RATE(PMacTxInfo.TX_RATE))
+			phy_set_bb_reg(Adapter, offset, 0xc0000000, 2);
+
+	} else if(IS_HARDWARE_TYPE_JAGUAR(Adapter)) {
+		u4Byte offset = 0xb4c;
+
+		if(IS_MPT_OFDM_RATE(PMacTxInfo.TX_RATE))
+			phy_set_bb_reg(Adapter, offset, 0xc0000000, 0);
+		else if(IS_MPT_HT_RATE(PMacTxInfo.TX_RATE))
+			phy_set_bb_reg(Adapter, offset, 0xc0000000, 1);
+		else if(IS_MPT_VHT_RATE(PMacTxInfo.TX_RATE))
 			phy_set_bb_reg(Adapter, offset, 0xc0000000, 2);
 	}
 

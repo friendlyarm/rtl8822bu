@@ -15,11 +15,14 @@
 #ifndef __IOCTL_CFG80211_H__
 #define __IOCTL_CFG80211_H__
 
-#ifndef RTW_CFG80211_ALWAYS_INFORM_STA_DISCONNECT_EVENT
+#define RTW_CFG80211_BLOCK_DISCON_WHEN_CONNECT		BIT0
+#define RTW_CFG80211_BLOCK_DISCON_WHEN_DISCONNECT	BIT1
+
+#ifndef RTW_CFG80211_BLOCK_STA_DISCON_EVENT
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0))
-#define RTW_CFG80211_ALWAYS_INFORM_STA_DISCONNECT_EVENT 1
+#define RTW_CFG80211_BLOCK_STA_DISCON_EVENT (RTW_CFG80211_BLOCK_DISCON_WHEN_CONNECT)
 #else
-#define RTW_CFG80211_ALWAYS_INFORM_STA_DISCONNECT_EVENT 0
+#define RTW_CFG80211_BLOCK_STA_DISCON_EVENT (RTW_CFG80211_BLOCK_DISCON_WHEN_CONNECT | RTW_CFG80211_BLOCK_DISCON_WHEN_DISCONNECT)
 #endif
 #endif
 
@@ -71,8 +74,8 @@
 #endif
 
 #ifdef CONFIG_RTW_MESH
-	#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 11, 0))
-		#error "CONFIG_RTW_MESH can't be enabled when kernel < 3.11.0\n"
+	#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0))
+		#error "CONFIG_RTW_MESH can't be enabled when kernel < 3.10.0\n"
 	#endif
 #endif
 
@@ -139,7 +142,7 @@ struct rtw_wdev_priv {
 
 	_adapter *padapter;
 
-	#if !RTW_CFG80211_ALWAYS_INFORM_STA_DISCONNECT_EVENT
+	#if RTW_CFG80211_BLOCK_STA_DISCON_EVENT
 	u8 not_indic_disco;
 	#endif
 
@@ -188,17 +191,30 @@ struct rtw_wdev_priv {
         u8 rssi_monitor_enable;
 #endif
 
+};
 
+enum external_auth_action {
+	EXTERNAL_AUTH_START,
+	EXTERNAL_AUTH_ABORT,
+};
+
+struct rtw_external_auth_params {
+	enum external_auth_action action;
+	u8 bssid[ETH_ALEN]__aligned(2);
+	struct cfg80211_ssid ssid;
+	unsigned int key_mgmt_suite;
+	u16 status;
+	u8 pmkid[PMKID_LEN];
 };
 
 bool rtw_cfg80211_is_connect_requested(_adapter *adapter);
 
-#if RTW_CFG80211_ALWAYS_INFORM_STA_DISCONNECT_EVENT
-#define rtw_wdev_not_indic_disco(rtw_wdev_data) 0
-#define rtw_wdev_set_not_indic_disco(rtw_wdev_data, val) do {} while (0)
-#else
+#if RTW_CFG80211_BLOCK_STA_DISCON_EVENT
 #define rtw_wdev_not_indic_disco(rtw_wdev_data) ((rtw_wdev_data)->not_indic_disco)
 #define rtw_wdev_set_not_indic_disco(rtw_wdev_data, val) do { (rtw_wdev_data)->not_indic_disco = (val); } while (0)
+#else
+#define rtw_wdev_not_indic_disco(rtw_wdev_data) 0
+#define rtw_wdev_set_not_indic_disco(rtw_wdev_data, val) do {} while (0)
 #endif
 
 #define rtw_wdev_free_connect_req(rtw_wdev_data) \
@@ -244,7 +260,8 @@ struct rtw_wiphy_data {
 #define FUNC_WIPHY_FMT "%s("WIPHY_FMT")"
 #define FUNC_WIPHY_ARG(wiphy) __func__, WIPHY_ARG(wiphy)
 
-#define SET_CFG80211_REPORT_MGMT(w, t, v) (w->report_mgmt |= (v ? BIT(t >> 4) : 0))
+#define SET_CFG80211_REPORT_MGMT(w, t, v) (w->report_mgmt |= BIT(t >> 4))
+#define CLR_CFG80211_REPORT_MGMT(w, t, v) (w->report_mgmt &= (~BIT(t >> 4)))
 #define GET_CFG80211_REPORT_MGMT(w, t) ((w->report_mgmt & BIT(t >> 4)) > 0)
 
 struct wiphy *rtw_wiphy_alloc(_adapter *padapter, struct device *dev);
@@ -292,6 +309,9 @@ void rtw_cfg80211_indicate_sta_disassoc(_adapter *padapter, const u8 *da, unsign
 #ifdef CONFIG_P2P
 void rtw_cfg80211_set_is_roch(_adapter *adapter, bool val);
 bool rtw_cfg80211_get_is_roch(_adapter *adapter);
+bool rtw_cfg80211_is_ro_ch_once(_adapter *adapter);
+void rtw_cfg80211_set_last_ro_ch_time(_adapter *adapter);
+s32 rtw_cfg80211_get_last_ro_ch_passing_ms(_adapter *adapter);
 
 int rtw_cfg80211_iface_has_p2p_group_cap(_adapter *adapter);
 int rtw_cfg80211_is_p2p_scan(_adapter *adapter);
@@ -314,6 +334,10 @@ void rtw_cfg80211_rx_action_p2p(_adapter *padapter, union recv_frame *rframe);
 void rtw_cfg80211_rx_action(_adapter *adapter, union recv_frame *rframe, const char *msg);
 void rtw_cfg80211_rx_mframe(_adapter *adapter, union recv_frame *rframe, const char *msg);
 void rtw_cfg80211_rx_probe_request(_adapter *padapter, union recv_frame *rframe);
+
+void rtw_cfg80211_external_auth_request(_adapter *padapter, union recv_frame *rframe);
+void rtw_cfg80211_external_auth_status(struct wiphy *wiphy, struct net_device *dev,
+	struct rtw_external_auth_params *params);
 
 int rtw_cfg80211_set_mgnt_wpsp2pie(struct net_device *net, char *buf, int len, int type);
 

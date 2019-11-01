@@ -498,7 +498,7 @@ static void rtw_init_recv_timer(struct recv_reorder_ctrl *preorder_ctrl)
 /* struct	sta_info *rtw_alloc_stainfo(_queue *pfree_sta_queue, unsigned char *hwaddr) */
 struct	sta_info *rtw_alloc_stainfo(struct	sta_priv *pstapriv, const u8 *hwaddr)
 {
-	_irqL irqL, irqL2;
+	_irqL irqL2;
 	s32	index;
 	_list	*phash_list;
 	struct sta_info	*psta;
@@ -595,6 +595,7 @@ struct	sta_info *rtw_alloc_stainfo(struct	sta_priv *pstapriv, const u8 *hwaddr)
 #endif
 		/* init for the sequence number of received management frame */
 		psta->RxMgmtFrameSeqNum = 0xffff;
+		_rtw_memset(&psta->sta_stats, 0, sizeof(struct stainfo_stats));
 
 		rtw_alloc_macid(pstapriv->padapter, psta);
 
@@ -1326,3 +1327,4 @@ void dump_pre_link_sta_ctl(void *sel, struct sta_priv *stapriv)
 	}
 }
 #endif /* CONFIG_RTW_PRE_LINK_STA */
+

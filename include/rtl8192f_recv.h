@@ -32,7 +32,7 @@
 				#ifdef CONFIG_PLATFORM_MSTAR
 					#define MAX_RECVBUF_SZ (8192) /* 8K */
 				#else
-					#define MAX_RECVBUF_SZ (15360) /* 15k < 16k */
+					#define MAX_RECVBUF_SZ (32768) /* 32k */
 				#endif
 				/* #define MAX_RECVBUF_SZ (8192+1024) */ /* 8K+1k */
 			#else
@@ -41,6 +41,8 @@
 		#endif
 	#endif /* !MAX_RECVBUF_SZ */
 
+#elif defined(CONFIG_PCI_HCI)
+	#define MAX_RECVBUF_SZ (4000) /* about 4K */
 
 #elif defined(CONFIG_SDIO_HCI) || defined(CONFIG_GSPI_HCI)
 
@@ -93,7 +95,16 @@
 	s32 rtl8192fs_recv_hdl(_adapter *padapter);
 #endif
 
+#ifdef CONFIG_USB_HCI
+	int rtl8192fu_init_recv_priv(_adapter *padapter);
+	void rtl8192fu_free_recv_priv(_adapter *padapter);
+	void rtl8192fu_init_recvbuf(_adapter *padapter, struct recv_buf *precvbuf);
+#endif
 
+#ifdef CONFIG_PCI_HCI
+	s32 rtl8192fe_init_recv_priv(_adapter *padapter);
+	void rtl8192fe_free_recv_priv(_adapter *padapter);
+#endif
 
 void rtl8192f_query_rx_desc_status(union recv_frame *precvframe, u8 *pdesc);
 

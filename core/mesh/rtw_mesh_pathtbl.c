@@ -345,8 +345,10 @@ rtw_mpp_path_lookup_by_idx(_adapter *adapter, int idx)
  */
 int rtw_mesh_path_add_gate(struct rtw_mesh_path *mpath)
 {
+	struct rtw_mesh_cfg *mcfg;
+	struct rtw_mesh_info *minfo;
 	struct rtw_mesh_table *tbl;
-	int err, tmp;
+	int err, ori_num_gates;
 
 	rtw_rcu_read_lock();
 	tbl = mpath->adapter->mesh_info.mesh_paths;
@@ -356,22 +358,37 @@ int rtw_mesh_path_add_gate(struct rtw_mesh_path *mpath)
 	}
 
 	enter_critical_bh(&mpath->state_lock);
+	mcfg = &mpath->adapter->mesh_cfg;
+	mpath->gate_timeout = rtw_get_current_time() +
+			      rtw_ms_to_systime(mcfg->path_gate_timeout_factor *
+					        mpath->gate_ann_int);
 	if (mpath->is_gate) {
 		err = -EEXIST;
 		exit_critical_bh(&mpath->state_lock);
 		goto err_rcu;
 	}
 
+	minfo = &mpath->adapter->mesh_info;
 	mpath->is_gate = true;
 	_rtw_spinlock(&tbl->gates_lock);
-	tmp = mpath->adapter->mesh_info.num_gates;
-	mpath->adapter->mesh_info.num_gates++;
+	ori_num_gates = minfo->num_gates;
+	minfo->num_gates++;
 	rtw_hlist_add_head_rcu(&mpath->gate_list, &tbl->known_gates);
+
+	if (ori_num_gates == 0
+		|| rtw_macaddr_is_larger(mpath->dst, minfo->max_addr_gate->dst)
+	) {
+		minfo->max_addr_gate = mpath;
+		minfo->max_addr_gate_is_larger_than_self =
+			rtw_macaddr_is_larger(mpath->dst, adapter_mac_addr(mpath->adapter));
+	}
+
 	_rtw_spinunlock(&tbl->gates_lock);
-	if (tmp == 0 && mpath->adapter->mesh_info.num_gates == 1)
-		rtw_mesh_update_formation_info(mpath->adapter, 1);
 
 	exit_critical_bh(&mpath->state_lock);
+
+	if (ori_num_gates == 0)
+		update_beacon(mpath->adapter, WLAN_EID_MESH_CONFIG, NULL, _TRUE);
 
 	RTW_MPATH_DBG(
 		  FUNC_ADPT_FMT" Mesh path: Recorded new gate: %pM. %d known gates\n",
@@ -390,23 +407,72 @@ err_rcu:
  */
 void rtw_mesh_gate_del(struct rtw_mesh_table *tbl, struct rtw_mesh_path *mpath)
 {
+	struct rtw_mesh_cfg *mcfg;
+	struct rtw_mesh_info *minfo;
+	int ori_num_gates;
+
 	rtw_lockdep_assert_held(&mpath->state_lock);
 	if (!mpath->is_gate)
 		return;
 
+	mcfg = &mpath->adapter->mesh_cfg;
+	minfo = &mpath->adapter->mesh_info;
+
 	mpath->is_gate = false;
 	enter_critical_bh(&tbl->gates_lock);
 	rtw_hlist_del_rcu(&mpath->gate_list);
-	mpath->adapter->mesh_info.num_gates--;
+	ori_num_gates = minfo->num_gates;
+	minfo->num_gates--;
+
+	if (ori_num_gates == 1) {
+		minfo->max_addr_gate = NULL;
+		minfo->max_addr_gate_is_larger_than_self = 0;
+	} else if (minfo->max_addr_gate == mpath) {
+		struct rtw_mesh_path *gate, *max_addr_gate = NULL;
+		rtw_hlist_node *node;
+
+		rtw_hlist_for_each_entry_rcu(gate, node, &tbl->known_gates, gate_list) {
+			if (!max_addr_gate || rtw_macaddr_is_larger(gate->dst, max_addr_gate->dst))
+				max_addr_gate = gate;
+		}
+		minfo->max_addr_gate = max_addr_gate;
+		minfo->max_addr_gate_is_larger_than_self =
+			rtw_macaddr_is_larger(max_addr_gate->dst, adapter_mac_addr(mpath->adapter));
+	}
+
 	exit_critical_bh(&tbl->gates_lock);
 
-	if (mpath->adapter->mesh_info.num_gates == 0)
-		rtw_mesh_update_formation_info(mpath->adapter, 0);
+	if (ori_num_gates == 1)
+		update_beacon(mpath->adapter, WLAN_EID_MESH_CONFIG, NULL, _TRUE);
 
 	RTW_MPATH_DBG(
 		  FUNC_ADPT_FMT" Mesh path: Deleted gate: %pM. %d known gates\n",
 		  FUNC_ADPT_ARG(mpath->adapter),
 		  mpath->dst, mpath->adapter->mesh_info.num_gates);
+}
+
+/**
+ * rtw_mesh_gate_search - search a mesh gate from the list of known gates
+ * @tbl: table which holds our list of known gates
+ * @addr: address of gate
+ */
+bool rtw_mesh_gate_search(struct rtw_mesh_table *tbl, const u8 *addr)
+{
+	struct rtw_mesh_path *gate;
+	rtw_hlist_node *node;
+	bool exist = 0;
+
+	rtw_rcu_read_lock();
+	rtw_hlist_for_each_entry_rcu(gate, node, &tbl->known_gates, gate_list) {
+		if (_rtw_memcmp(gate->dst, addr, ETH_ALEN) == _TRUE) {
+			exist = 1;
+			break;
+		}
+	}
+
+	rtw_rcu_read_unlock();
+
+	return exist;
 }
 
 /**
@@ -416,6 +482,45 @@ void rtw_mesh_gate_del(struct rtw_mesh_table *tbl, struct rtw_mesh_path *mpath)
 int rtw_mesh_gate_num(_adapter *adapter)
 {
 	return adapter->mesh_info.num_gates;
+}
+
+bool rtw_mesh_is_primary_gate(_adapter *adapter)
+{
+	struct rtw_mesh_cfg *mcfg = &adapter->mesh_cfg;
+	struct rtw_mesh_info *minfo = &adapter->mesh_info;
+
+	return mcfg->dot11MeshGateAnnouncementProtocol
+		&& !minfo->max_addr_gate_is_larger_than_self;
+}
+
+void dump_known_gates(void *sel, _adapter *adapter)
+{
+	struct rtw_mesh_info *minfo = &adapter->mesh_info;
+	struct rtw_mesh_table *tbl;
+	struct rtw_mesh_path *gate;
+	rtw_hlist_node *node;
+
+	if (!rtw_mesh_gate_num(adapter))
+		goto exit;
+
+	rtw_rcu_read_lock();
+
+	tbl = minfo->mesh_paths;
+	if (!tbl)
+		goto unlock;
+
+	RTW_PRINT_SEL(sel, "num:%d\n", rtw_mesh_gate_num(adapter));
+
+	rtw_hlist_for_each_entry_rcu(gate, node, &tbl->known_gates, gate_list) {
+		RTW_PRINT_SEL(sel, "%c"MAC_FMT"\n"
+			, gate == minfo->max_addr_gate ? '*' : ' '
+			, MAC_ARG(gate->dst));
+	}
+
+unlock:
+	rtw_rcu_read_unlock();
+exit:
+	return;
 }
 
 static
@@ -433,6 +538,7 @@ struct rtw_mesh_path *rtw_mesh_path_new(_adapter *adapter,
 	new_mpath->is_root = false;
 	new_mpath->adapter = adapter;
 	new_mpath->flags = 0;
+	new_mpath->gate_asked = false;
 	_rtw_init_queue(&new_mpath->frame_queue);
 	new_mpath->frame_queue_len = 0;
 	new_mpath->exp_time = rtw_get_current_time();
@@ -533,6 +639,34 @@ int rtw_mpp_path_add(_adapter *adapter,
 	return ret;
 }
 
+void dump_mpp(void *sel, _adapter *adapter)
+{
+	struct rtw_mesh_path *mpath;
+	int idx = 0;
+	char dst[ETH_ALEN];
+	char mpp[ETH_ALEN];
+
+	RTW_PRINT_SEL(sel, "%-17s %-17s\n", "dst", "mpp");
+
+	do {
+		rtw_rcu_read_lock();
+
+		mpath = rtw_mpp_path_lookup_by_idx(adapter, idx);
+		if (mpath) {
+			_rtw_memcpy(dst, mpath->dst, ETH_ALEN);
+			_rtw_memcpy(mpp, mpath->mpp, ETH_ALEN);
+		}
+
+		rtw_rcu_read_unlock();
+
+		if (mpath) {
+			RTW_PRINT_SEL(sel, MAC_FMT" "MAC_FMT"\n"
+				, MAC_ARG(dst), MAC_ARG(mpp));
+		}
+
+		idx++;
+	} while (mpath);
+}
 
 /**
  * rtw_mesh_plink_broken - deactivates paths and sends perr when a link breaks
@@ -695,7 +829,7 @@ static void rtw_table_flush_by_iface(struct rtw_mesh_table *tbl)
 
 	if (!tbl)
 		return;
-
+	
 	ret = rtw_rhashtable_walk_enter(&tbl->rhead, &iter);
 	if (ret)
 		return;
@@ -993,7 +1127,27 @@ void rtw_mesh_path_tbl_expire(_adapter *adapter,
 		    (!(mpath->flags & RTW_MESH_PATH_FIXED)) &&
 		     rtw_time_after(rtw_get_current_time(), mpath->exp_time + RTW_MESH_PATH_EXPIRE))
 			__rtw_mesh_path_del(tbl, mpath);
+
+		if (mpath->is_gate &&  /* need not to deal with non-gate case */
+		    rtw_time_after(rtw_get_current_time(), mpath->gate_timeout)) {
+			RTW_MPATH_DBG(FUNC_ADPT_FMT"mpath [%pM] expired systime is %lu systime is %lu\n",
+				      FUNC_ADPT_ARG(adapter), mpath->dst,
+				      mpath->gate_timeout, rtw_get_current_time());
+			enter_critical_bh(&mpath->state_lock);
+			if (mpath->gate_asked) { /* asked gate before */
+				rtw_mesh_gate_del(tbl, mpath);
+				exit_critical_bh(&mpath->state_lock);
+			} else {
+				mpath->gate_asked = true;
+				mpath->gate_timeout = rtw_get_current_time() + rtw_ms_to_systime(mpath->gate_ann_int);
+				exit_critical_bh(&mpath->state_lock);
+				rtw_mesh_queue_preq(mpath, RTW_PREQ_Q_F_START | RTW_PREQ_Q_F_REFRESH);
+				RTW_MPATH_DBG(FUNC_ADPT_FMT"mpath [%pM] ask mesh gate existence (is_root=%d)\n",
+				      FUNC_ADPT_ARG(adapter), mpath->dst, mpath->is_root);
+			}
+		}
 	}
+
 out:
 	rtw_rhashtable_walk_stop(&iter);
 	rtw_rhashtable_walk_exit(&iter);
@@ -1018,3 +1172,4 @@ void rtw_mesh_pathtbl_unregister(_adapter *adapter)
 	}
 }
 #endif /* CONFIG_RTW_MESH */
+

@@ -40,7 +40,7 @@ typedef u32	_irqL;
 
 typedef NDIS_HANDLE  _nic_hdl;
 
-struct timer_list {
+struct rtw_timer_list {
 	NDIS_MINIPORT_TIMER ndis_timer;
 	void (*function)(void *);
 	void *arg;
@@ -68,7 +68,7 @@ __inline static _list *get_prev(_list	*list)
 {
 	return list->Blink;
 }
-
+	
 __inline static _list *get_next(_list	*list)
 {
 	return list->Flink;
@@ -93,12 +93,12 @@ __inline static void _exit_critical(_lock *plock, _irqL *pirqL)
 
 __inline static _enter_critical_ex(_lock *plock, _irqL *pirqL)
 {
-	NdisDprAcquireSpinLock(plock);
+	NdisDprAcquireSpinLock(plock);	
 }
 
 __inline static _exit_critical_ex(_lock *plock, _irqL *pirqL)
 {
-	NdisDprReleaseSpinLock(plock);
+	NdisDprReleaseSpinLock(plock);	
 }
 
 
@@ -197,3 +197,4 @@ __inline static void _set_workitem(_workitem *pwork)
 
 
 #endif
+

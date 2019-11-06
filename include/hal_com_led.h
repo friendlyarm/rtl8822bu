@@ -434,3 +434,4 @@ void rtw_led_set_ctl_en_mask_virtual(_adapter *adapter);
 #endif /* defined(CONFIG_RTW_LED) && defined(CONFIG_RTW_SW_LED) */
 
 #endif /*__HAL_COMMON_LED_H_*/
+

@@ -16,11 +16,9 @@
 #define _WIFI_H_
 
 
-#ifdef BIT
-/* #error	"BIT define occurred earlier elsewhere!\n" */
-#undef BIT
-#endif
+#ifndef BIT
 #define BIT(x)	(1 << (x))
+#endif
 
 
 #define WLAN_ETHHDR_LEN		14
@@ -44,6 +42,7 @@
 #define WLAN_MAX_ETHFRM_LEN	1514
 #define WLAN_ETHHDR_LEN		14
 #define WLAN_WMM_LEN		24
+#define VENDOR_NAME_LEN		20
 
 #ifdef CONFIG_APPEND_VENDOR_IE_ENABLE
 #define WLAN_MAX_VENDOR_IE_LEN 255
@@ -53,6 +52,13 @@
 #define WIFI_PROBERESP_VENDOR_IE_BIT BIT(2)
 #define WIFI_ASSOCREQ_VENDOR_IE_BIT BIT(3)
 #define WIFI_ASSOCRESP_VENDOR_IE_BIT BIT(4)
+#ifdef CONFIG_P2P
+#define WIFI_P2P_PROBEREQ_VENDOR_IE_BIT BIT(5)
+#define WIFI_P2P_PROBERESP_VENDOR_IE_BIT BIT(6)
+#define WLAN_MAX_VENDOR_IE_MASK_MAX 7
+#else
+#define WLAN_MAX_VENDOR_IE_MASK_MAX 5
+#endif
 #endif
 
 #define P80211CAPTURE_VERSION	0x80211001
@@ -1373,10 +1379,8 @@ enum P2P_PS_MODE {
 #define	WFD_DEVINFO_PC_TDLS					0x0080
 #define	WFD_DEVINFO_HDCP_SUPPORT			0x0100
 
-#ifdef CONFIG_TX_MCAST2UNI
 #define IP_MCAST_MAC(mac)		((mac[0] == 0x01) && (mac[1] == 0x00) && (mac[2] == 0x5e))
 #define ICMPV6_MCAST_MAC(mac)	((mac[0] == 0x33) && (mac[1] == 0x33) && (mac[2] != 0xff))
-#endif /* CONFIG_TX_MCAST2UNI */
 
 #ifdef CONFIG_IOCTL_CFG80211
 /* Regulatroy Domain */

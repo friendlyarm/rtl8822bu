@@ -31,6 +31,17 @@
 	#include "halrf/rtl8821c/halrf_iqk_8821c.h"
 #endif
 
+#if (RTL8195B_SUPPORT == 1)
+//	#include "halrf/rtl8195b/halrf.h"
+	#include "halrf/rtl8195b/halrf_iqk_8195b.h"
+	#include "halrf/rtl8195b/halrf_txgapk_8195b.h"
+	#include "halrf/rtl8195b/halrf_dpk_8195b.h"
+#endif
+
+#if (RTL8814B_SUPPORT == 1)
+	#include "halrf/rtl8814b/halrf_iqk_8814b.h"
+#endif
+
 enum spur_cal_method {
 	PLL_RESET,
 	AFE_PHASE_SEL

@@ -211,6 +211,12 @@ struct rx_pkt_attrib	{
 	u8	ppdu_cnt;
 	u32 	free_cnt;		/* free run counter */
 	struct phydm_phyinfo_struct phy_info;
+
+#ifdef CONFIG_TCP_CSUM_OFFLOAD_RX
+	/* checksum offload realted varaiables */
+	u8 csum_valid;		/* Checksum valid, 0: not check, 1: checked */
+	u8 csum_err;		/* Checksum Error occurs */
+#endif /* CONFIG_TCP_CSUM_OFFLOAD_RX */
 };
 
 #ifdef CONFIG_RTW_MESH
@@ -226,7 +232,11 @@ struct rx_pkt_attrib	{
 /* #define REORDER_ENTRY_NUM	128 */
 #define REORDER_WAIT_TIME	(50) /* (ms) */
 
-#define RECVBUFF_ALIGN_SZ 8
+#if defined(CONFIG_PLATFORM_RTK390X) && defined(CONFIG_USB_HCI)
+	#define RECVBUFF_ALIGN_SZ 32
+#else
+	#define RECVBUFF_ALIGN_SZ 8
+#endif
 
 #ifdef CONFIG_TRX_BD_ARCH
 	#define RX_WIFI_INFO_SIZE	24
@@ -400,7 +410,7 @@ struct recv_priv {
 	struct sk_buff_head rx_skb_queue;
 #ifdef CONFIG_RTW_NAPI
 		struct sk_buff_head rx_napi_skb_queue;
-#endif
+#endif 
 #ifdef CONFIG_RX_INDICATE_QUEUE
 	struct task rx_indicate_tasklet;
 	struct ifqueue rx_indicate_queue;
@@ -854,15 +864,8 @@ __inline static s32 translate_percentage_to_dbm(u32 SignalStrengthIndex)
 {
 	s32	SignalPower; /* in dBm. */
 
-#ifdef CONFIG_SIGNAL_SCALE_MAPPING
-	/* Translate to dBm (x=0.5y-95). */
-	SignalPower = (s32)((SignalStrengthIndex + 1) >> 1);
-	SignalPower -= 95;
-#else
 	/* Translate to dBm (x=y-100) */
 	SignalPower = SignalStrengthIndex - 100;
-#endif
-
 	return SignalPower;
 }
 

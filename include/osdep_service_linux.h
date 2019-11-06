@@ -93,10 +93,6 @@
 	#include <net/cfg80211.h>
 #endif /* CONFIG_IOCTL_CFG80211 */
 
-#ifdef CONFIG_TCP_CSUM_OFFLOAD_TX
-	#include <linux/in.h>
-	#include <linux/udp.h>
-#endif
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	#include <linux/earlysuspend.h>
@@ -160,18 +156,13 @@ typedef	spinlock_t	_lock;
 #else
 	typedef struct semaphore	_mutex;
 #endif
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
-typedef struct {
-	struct timer_list compat;
-	void (*function)(unsigned long);
-	unsigned long data;
-} _timer;
-void compat_timer_wrapper(struct timer_list *compat);
-#define compat_timer(tm) &(tm)->compat
-#else
-typedef struct timer_list _timer;
-#define compat_timer(tm) (tm)
-#endif
+struct rtw_timer_list {
+	struct timer_list timer;
+	void (*function)(void *);
+	void *arg;
+};
+
+typedef struct rtw_timer_list _timer;
 typedef struct completion _completion;
 
 struct	__queue	{
@@ -329,6 +320,17 @@ __inline static int _enter_critical_mutex(_mutex *pmutex, _irqL *pirqL)
 }
 
 
+__inline static int _enter_critical_mutex_lock(_mutex *pmutex, _irqL *pirqL)
+{
+	int ret = 0;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 37))
+	mutex_lock(pmutex);
+#else
+	down(pmutex);
+#endif
+	return ret;
+}
+
 __inline static void _exit_critical_mutex(_mutex *pmutex, _irqL *pirqL)
 {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 37))
@@ -343,25 +345,43 @@ __inline static _list	*get_list_head(_queue	*queue)
 	return &(queue->queue);
 }
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0))
+static inline void timer_hdl(struct timer_list *in_timer)
+#else
+static inline void timer_hdl(unsigned long cntx)
+#endif
+{
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0))
+	_timer *ptimer = from_timer(ptimer, in_timer, timer);
+#else
+	_timer *ptimer = (_timer *)cntx;
+#endif
+	ptimer->function(ptimer->arg);
+}
+
 __inline static void _init_timer(_timer *ptimer, _nic_hdl nic_hdl, void *pfunc, void *cntx)
 {
 	ptimer->function = pfunc;
-	ptimer->data = (unsigned long)cntx;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
-	timer_setup(&ptimer->compat, compat_timer_wrapper, 0);
+	ptimer->arg = cntx;
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0))
+	timer_setup(&ptimer->timer, timer_hdl, 0);
 #else
-	init_timer(ptimer);
+	/* setup_timer(ptimer, pfunc,(u32)cntx);	 */
+	ptimer->timer.function = timer_hdl;
+	ptimer->timer.data = (unsigned long)ptimer;
+	init_timer(&ptimer->timer);
 #endif
 }
 
 __inline static void _set_timer(_timer *ptimer, u32 delay_time)
 {
-	mod_timer(compat_timer(ptimer), (jiffies + (delay_time * HZ / 1000)));
+	mod_timer(&ptimer->timer , (jiffies + (delay_time * HZ / 1000)));
 }
 
 __inline static void _cancel_timer(_timer *ptimer, u8 *bcancelled)
 {
-	*bcancelled = del_timer_sync(compat_timer(ptimer)) == 1 ? 1 : 0;
+	*bcancelled = del_timer_sync(&ptimer->timer) == 1 ? 1 : 0;
 }
 
 static inline void _init_workitem(_workitem *pwork, void *pfunc, void *cntx)

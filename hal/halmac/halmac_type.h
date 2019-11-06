@@ -48,6 +48,18 @@
 #define HALMAC_MSG_LEVEL_NO_LOG		0
 #endif
 
+#ifndef HALMAC_SDIO_SUPPORT
+#define HALMAC_SDIO_SUPPORT		1
+#endif
+
+#ifndef HALMAC_USB_SUPPORT
+#define HALMAC_USB_SUPPORT		1
+#endif
+
+#ifndef HALMAC_PCIE_SUPPORT
+#define HALMAC_PCIE_SUPPORT		1
+#endif
+
 #ifndef HALMAC_MSG_LEVEL
 #define HALMAC_MSG_LEVEL HALMAC_MSG_LEVEL_TRACE
 #endif
@@ -176,18 +188,36 @@
 	api->halmac_reg_sdio_cmd53_read_n(adapter, offset, size, data)
 
 #define HALMAC_REG_W8_CLR(offset, mask)                                        \
-	HALMAC_REG_W8(offset, HALMAC_REG_R8(offset) & ~(mask))
+	do {                                                                   \
+		u32 __offset = (u32)offset;                                    \
+		HALMAC_REG_W8(__offset, HALMAC_REG_R8(__offset) & ~(mask));    \
+	} while (0)
 #define HALMAC_REG_W16_CLR(offset, mask)                                       \
-	HALMAC_REG_W16(offset, HALMAC_REG_R16(offset) & ~(mask))
+	do {                                                                   \
+		u32 __offset = (u32)offset;                                    \
+		HALMAC_REG_W16(__offset, HALMAC_REG_R16(__offset) & ~(mask));  \
+	} while (0)
 #define HALMAC_REG_W32_CLR(offset, mask)                                       \
-	HALMAC_REG_W32(offset, HALMAC_REG_R32(offset) & ~(mask))
+	do {                                                                   \
+		u32 __offset = (u32)offset;                                    \
+		HALMAC_REG_W32(__offset, HALMAC_REG_R32(__offset) & ~(mask));  \
+	} while (0)
 
 #define HALMAC_REG_W8_SET(offset, mask)                                        \
-	HALMAC_REG_W8(offset, HALMAC_REG_R8(offset) | (mask))
+	do {                                                                   \
+		u32 __offset = (u32)offset;                                    \
+		HALMAC_REG_W8(__offset, HALMAC_REG_R8(__offset) | mask);       \
+	} while (0)
 #define HALMAC_REG_W16_SET(offset, mask)                                       \
-	HALMAC_REG_W16(offset, HALMAC_REG_R16(offset) | (mask))
+	do {                                                                   \
+		u32 __offset = (u32)offset;                                    \
+		HALMAC_REG_W16(__offset, HALMAC_REG_R16(__offset) | mask);     \
+	} while (0)
 #define HALMAC_REG_W32_SET(offset, mask)                                       \
-	HALMAC_REG_W32(offset, HALMAC_REG_R32(offset) | (mask))
+	do {                                                                   \
+		u32 __offset = (u32)offset;                                    \
+		HALMAC_REG_W32(__offset, HALMAC_REG_R32(__offset) | mask);     \
+	} while (0)
 
 /* Swap Little-endian <-> Big-endia*/
 #define SWAP32(x)                                                              \
@@ -479,6 +509,8 @@ enum halmac_ret_status {
 	HALMAC_RET_TXDESC_SET_FAIL = 0x73,
 	HALMAC_RET_WLHDR_FAIL = 0x74,
 	HALMAC_RET_WLAN_MODE_FAIL = 0x75,
+	HALMAC_RET_SDIO_SEQ_FAIL = 0x72,
+	HALMAC_RET_INIT_XTAL_AAC_FAIL = 0x76,
 };
 
 enum halmac_chip_id {
@@ -487,6 +519,7 @@ enum halmac_chip_id {
 	HALMAC_CHIP_ID_8814B = 2,
 	HALMAC_CHIP_ID_8197F = 3,
 	HALMAC_CHIP_ID_8822C = 4,
+	HALMAC_CHIP_ID_8812F = 5,
 	HALMAC_CHIP_ID_UNDEFINE = 0x7F,
 };
 
@@ -858,6 +891,7 @@ struct halmac_hw_cfg_info {
 	u8 acq_num;
 	u8 trx_mode;
 	u8 usb_txagg_num;
+	u32 prtct_efuse_size;
 };
 
 struct halmac_sdio_free_space {
@@ -948,6 +982,7 @@ struct halmac_ch_switch_option {
 	u8 normal_cycle;
 	u8 phase_2_period;
 	u8 phase_2_period_sel;
+	u8 nlo_en;
 };
 
 struct halmac_p2pps {
@@ -1025,6 +1060,11 @@ struct halmac_pwr_tracking_option {
 struct halmac_fast_edca_cfg {
 	enum halmac_acq_id acq_id;
 	u8 queue_to; /* unit : 32us*/
+};
+
+struct halmac_txfifo_lifetime_cfg {
+	u8 enable;
+	u32 lifetime;
 };
 
 enum halmac_data_rate {
@@ -1199,6 +1239,7 @@ enum halmac_drv_rsvd_pg_num {
 	HALMAC_RSVD_PG_NUM32,   /* 4K */
 	HALMAC_RSVD_PG_NUM64,   /* 8K */
 	HALMAC_RSVD_PG_NUM128,  /* 16K */
+	HALMAC_RSVD_PG_NUM256,  /* 32K */
 };
 
 enum halmac_pcie_cfg {
@@ -1232,11 +1273,11 @@ union halmac_wlan_addr {
 	u8 addr[6];
 	struct {
 		union {
-			u32 low;
+			__le32 low;
 			u8 low_byte[4];
 		};
 		union {
-			u16 high;
+			__le16 high;
 			u8 high_byte[2];
 		};
 	} addr_l_h;
@@ -1515,6 +1556,8 @@ enum halmac_api_id {
 	HALMAC_API_GET_CPU_MODE = 0x9A,
 	HALMAC_API_DRV_FWCTRL = 0x9B,
 	HALMAC_API_EN_REF_AUTOK = 0x9C,
+	HALMAC_API_RESET_WIFI_FW = 0x9D,
+	HALMAC_API_CFGSPC_SET_PCIE = 0x9E,
 	HALMAC_API_MAX
 };
 
@@ -1616,6 +1659,7 @@ enum halmac_hw_id {
 	HALMAC_HW_FREE_CNT_EN = 0x72,
 	HALMAC_HW_SDIO_WT_EN = 0x73,
 	HALMAC_HW_SDIO_CLK_MONITOR = 0x74,
+	HALMAC_HW_TXFIFO_LIFETIME = 0x75,
 	HALMAC_HW_ID_UNDEFINE = 0x7F,
 };
 
@@ -1675,6 +1719,68 @@ enum halmac_psf_fcs_chk_thr {
 	HALMAC_PSF_FCS_CHK_THR_20 = 5,
 	HALMAC_PSF_FCS_CHK_THR_24 = 6,
 	HALMAC_PSF_FCS_CHK_THR_28 = 7,
+};
+
+enum halmac_func_ctrl {
+	HALMAC_DISABLE = 0,
+	HALMAC_ENABLE = 1,
+	HALMAC_DEFAULT = 0xFE,
+	HALMAC_IGNORE = 0xFF
+};
+
+enum halmac_pcie_clkdly {
+	HALMAC_CLKDLY_0 = 0,
+	HALMAC_CLKDLY_5US = 1,
+	HALMAC_CLKDLY_6US = 2,
+	HALMAC_CLKDLY_11US = 3,
+	HALMAC_CLKDLY_15US = 4,
+	HALMAC_CLKDLY_19US = 5,
+	HALMAC_CLKDLY_25US = 6,
+	HALMAC_CLKDLY_30US = 7,
+	HALMAC_CLKDLY_38US = 8,
+	HALMAC_CLKDLY_50US = 9,
+	HALMAC_CLKDLY_64US = 10,
+	HALMAC_CLKDLY_100US = 11,
+	HALMAC_CLKDLY_128US = 12,
+	HALMAC_CLKDLY_150US = 13,
+	HALMAC_CLKDLY_192US = 14,
+	HALMAC_CLKDLY_200US = 15,
+	HALMAC_CLKDLY_R_ERR = 0xFD,
+	HALMAC_CLKDLY_DEF = 0xFE,
+	HALMAC_CLKDLY_IGNORE = 0xFF
+};
+
+enum halmac_pcie_l1dly {
+	HALMAC_L1DLY_16US = 0,
+	HALMAC_L1DLY_32US = 1,
+	HALMAC_L1DLY_64US = 2,
+	HALMAC_L1DLY_INFI = 3,
+	HALMAC_L1DLY_R_ERR = 0xFD,
+	HALMAC_L1DLY_DEF = 0xFE,
+	HALMAC_L1DLY_IGNORE = 0xFF
+};
+
+enum halmac_pcie_l0sdly {
+	HALMAC_L0SDLY_1US = 0,
+	HALMAC_L0SDLY_3US = 1,
+	HALMAC_L0SDLY_5US = 2,
+	HALMAC_L0SDLY_7US = 3,
+	HALMAC_L0SDLY_R_ERR = 0xFD,
+	HALMAC_L0SDLY_DEF = 0xFE,
+	HALMAC_L0SDLY_IGNORE = 0xFF
+};
+
+struct halmac_pcie_cfgspc_param {
+	u8 write;
+	u8 read;
+	enum halmac_func_ctrl l0s_ctrl;
+	enum halmac_func_ctrl l1_ctrl;
+	enum halmac_func_ctrl l1ss_ctrl;
+	enum halmac_func_ctrl wake_ctrl;
+	enum halmac_func_ctrl crq_ctrl;
+	enum halmac_pcie_clkdly clkdly_ctrl;
+	enum halmac_pcie_l0sdly l0sdly_ctrl;
+	enum halmac_pcie_l1dly l1dly_ctrl;
 };
 
 struct halmac_txff_allocation {
@@ -1906,9 +2012,9 @@ struct halmac_h2c_info {
 struct halmac_adapter {
 	enum halmac_dma_mapping pq_map[HALMAC_PQ_MAP_NUM];
 	enum halmac_dma_ch ch_map[HALMAC_PQ_MAP_NUM];
-	HALMAC_MUTEX h2c_seq_mutex;
-	HALMAC_MUTEX efuse_mutex;
-	HALMAC_MUTEX sdio_indir_mutex; /*Protect sdio indirect access */
+	HALMAC_MUTEX h2c_seq_mutex; /* protect h2c seq num */
+	HALMAC_MUTEX efuse_mutex; /*protect adapter efuse map */
+	HALMAC_MUTEX sdio_indir_mutex; /*protect sdio indirect access */
 	struct halmac_cfg_param_info cfg_param_info;
 	struct halmac_ch_sw_info ch_sw_info;
 	struct halmac_event_trigger evnt;
@@ -1943,6 +2049,7 @@ struct halmac_adapter {
 	u8 efuse_auto_check_en;
 	u8 pcie_refautok_en;
 	u8 pwr_off_flow_flag;
+	u8 nlo_flag;
 	struct halmac_rx_ignore_info rx_ignore_info;
 #if HALMAC_PLATFORM_TESTPROGRAM
 	struct halmisc_adapter *halmisc_adapter;
@@ -1963,6 +2070,8 @@ struct halmac_api {
 	(*halmac_free_download_firmware)(struct halmac_adapter *adapter,
 					 enum halmac_dlfw_mem mem_sel,
 					 u8 *fw_bin, u32 size);
+	enum halmac_ret_status
+	(*halmac_reset_wifi_fw)(struct halmac_adapter *adapter);
 	enum halmac_ret_status
 	(*halmac_get_fw_version)(struct halmac_adapter *adapter,
 				 struct halmac_fw_version *ver);
@@ -2259,12 +2368,14 @@ struct halmac_api {
 	enum halmac_ret_status
 	(*halmac_cfg_csi_rate)(struct halmac_adapter *adapter, u8 rssi,
 			       u8 cur_rate, u8 fixrate_en, u8 *new_rate);
+#if HALMAC_SDIO_SUPPORT
 	enum halmac_ret_status
 	(*halmac_sdio_cmd53_4byte)(struct halmac_adapter *adapter,
 				   enum halmac_sdio_cmd53_4byte_mode mode);
 	enum halmac_ret_status
 	(*halmac_sdio_hw_info)(struct halmac_adapter *adapter,
 			       struct halmac_sdio_hw_info *info);
+#endif
 	enum halmac_ret_status
 	(*halmac_cfg_transmitter_addr)(struct halmac_adapter *adapter, u8 port,
 				       union halmac_wlan_addr *addr);
@@ -2354,8 +2465,13 @@ struct halmac_api {
 	enum halmac_ret_status
 	(*halmac_write_efuse)(struct halmac_adapter *adapter, u32 offset,
 			      u8 value);
+#if HALMAC_PCIE_SUPPORT
+	enum halmac_ret_status
+	(*halmac_cfgspc_set_pcie)(struct halmac_adapter *adapter,
+				  struct halmac_pcie_cfgspc_param *param);
 	void
 	(*halmac_en_ref_autok_pcie)(struct halmac_adapter *adapter, u8 en);
+#endif
 #if HALMAC_PLATFORM_TESTPROGRAM
 	struct halmisc_api *halmisc_api;
 #endif

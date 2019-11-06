@@ -107,18 +107,10 @@ typedef struct _RT_8192F_FIRMWARE_HDR {
 /* Note: We will divide number of page equally for each queue other than public queue! */
 
 /* For General Reserved Page Number(Beacon Queue is reserved page)
- * Beacon:2, PS-Poll:1, Null Data:1,Qos Null Data:1,BT Qos Null Data:1 */
-#define BCNQ_PAGE_NUM_8192F		0x08
-#ifdef CONFIG_CONCURRENT_MODE
-	#define BCNQ1_PAGE_NUM_8192F		0x08 /* 0x04 */
-#else
-	#define BCNQ1_PAGE_NUM_8192F		0x00
-#endif
+ * Beacon:MAX_BEACON_LEN/PAGE_SIZE_TX_8192F
+ * PS-Poll:1, Null Data:1,Qos Null Data:1,BT Qos Null Data:1,CTS-2-SELF,LTE QoS Null*/
+#define BCNQ_PAGE_NUM_8192F		(MAX_BEACON_LEN/PAGE_SIZE_TX_8192F + 6) /*0x08*/
 
-#ifdef CONFIG_PNO_SUPPORT
-	#undef BCNQ1_PAGE_NUM_8192F
-	#define BCNQ1_PAGE_NUM_8192F		0x00 /* 0x04 */
-#endif
 
 /* For WoWLan , more reserved page
  * ARP Rsp:1, RWC:1, GTK Info:1,GTK RSP:2,GTK EXT MEM:2, AOAC rpt 1, PNO: 6
@@ -139,8 +131,18 @@ typedef struct _RT_8192F_FIRMWARE_HDR {
 	#define AP_WOWLAN_PAGE_NUM_8192F	0x02
 #endif
 
+#ifdef DBG_LA_MODE
+	#define LA_MODE_PAGE_NUM 0xE0
+#endif
+
 #define MAX_RX_DMA_BUFFER_SIZE_8192F	(RX_DMA_SIZE_8192F - RX_DMA_RESERVED_SIZE_8192F)
-#define TX_TOTAL_PAGE_NUMBER_8192F	(0xFF - BCNQ_PAGE_NUM_8192F - BCNQ1_PAGE_NUM_8192F - WOWLAN_PAGE_NUM_8192F)
+
+#ifdef DBG_LA_MODE
+	#define TX_TOTAL_PAGE_NUMBER_8192F	(0xFF - LA_MODE_PAGE_NUM)
+#else
+	#define TX_TOTAL_PAGE_NUMBER_8192F	(0xFF - BCNQ_PAGE_NUM_8192F - WOWLAN_PAGE_NUM_8192F)
+#endif
+
 #define TX_PAGE_BOUNDARY_8192F		(TX_TOTAL_PAGE_NUMBER_8192F + 1)
 
 #define WMM_NORMAL_TX_TOTAL_PAGE_NUMBER_8192F \
@@ -150,9 +152,9 @@ typedef struct _RT_8192F_FIRMWARE_HDR {
 
 /* For Normal Chip Setting
  * (HPQ + LPQ + NPQ + PUBQ) shall be TX_TOTAL_PAGE_NUMBER_8192F */
-#define NORMAL_PAGE_NUM_HPQ_8192F		0x10
-#define NORMAL_PAGE_NUM_LPQ_8192F		0x10
-#define NORMAL_PAGE_NUM_NPQ_8192F		0x10
+#define NORMAL_PAGE_NUM_HPQ_8192F		0x8
+#define NORMAL_PAGE_NUM_LPQ_8192F		0x8
+#define NORMAL_PAGE_NUM_NPQ_8192F		0x8
 #define NORMAL_PAGE_NUM_EPQ_8192F		0x00
 
 /* Note: For Normal Chip Setting, modify later */
@@ -165,7 +167,7 @@ typedef struct _RT_8192F_FIRMWARE_HDR {
 #include "HalVerDef.h"
 #include "hal_com.h"
 
-#define EFUSE_OOB_PROTECT_BYTES 15
+#define EFUSE_OOB_PROTECT_BYTES 56 /*0x1C8~0x1FF*/
 
 #define HAL_EFUSE_MEMORY
 #define HWSET_MAX_SIZE_8192F                512
@@ -212,7 +214,6 @@ typedef enum tag_Package_Definition {
 #endif /* CONFIG_FILE_FWIMG */
 
 /* rtl8192f_hal_init.c */
-void _8051Reset8192F(PADAPTER padapter);
 s32 rtl8192f_FirmwareDownload(PADAPTER padapter, BOOLEAN  bUsedWoWLANFw);
 void rtl8192f_FirmwareSelfReset(PADAPTER padapter);
 void rtl8192f_InitializeFirmwareVars(PADAPTER padapter);
@@ -264,10 +265,9 @@ u8 GetHalDefVar8192F(PADAPTER padapter, HAL_DEF_VARIABLE variable, void *pval);
 /* register */
 void rtl8192f_InitBeaconParameters(PADAPTER padapter);
 void rtl8192f_InitBeaconMaxError(PADAPTER padapter, u8 InfraMode);
-void _InitBurstPktLen_8192FS(PADAPTER Adapter);
-void _InitLTECoex_8192FS(PADAPTER Adapter);
+
 void _InitMacAPLLSetting_8192F(PADAPTER Adapter);
-void _8051Reset8192(PADAPTER padapter);
+void _8051Reset8192F(PADAPTER padapter);
 #ifdef CONFIG_WOWLAN
 	void Hal_DetectWoWMode(PADAPTER pAdapter);
 #endif /* CONFIG_WOWLAN */
@@ -293,8 +293,6 @@ void CCX_FwC2HTxRpt_8192f(PADAPTER padapter, u8 *pdata, u8 len);
 u8 MRateToHwRate8192F(u8 rate);
 u8 HwRateToMRate8192F(u8 rate);
 
-void Hal_ReadRFGainOffset(PADAPTER pAdapter, u8 *hwinfo, BOOLEAN AutoLoadFail);
-
 #if defined(CONFIG_CHECK_BT_HANG) && defined(CONFIG_BT_COEXIST)
 	void check_bt_status_work(void *data);
 #endif
@@ -305,11 +303,13 @@ void rtl8192f_cal_txdesc_chksum(struct tx_desc *ptxdesc);
 #ifdef CONFIG_AMPDU_PRETX_CD
 void rtl8192f_pretx_cd_config(_adapter *adapter);
 #endif
-/*
+
 #ifdef CONFIG_PCI_HCI
 	BOOLEAN	InterruptRecognized8192FE(PADAPTER Adapter);
 	VOID	UpdateInterruptMask8192FE(PADAPTER Adapter, u32 AddMSR, u32 AddMSR1, u32 RemoveMSR, u32 RemoveMSR1);
+	VOID InitMAC_TRXBD_8192FE(PADAPTER Adapter);
+
 	u16 get_txbd_rw_reg(u16 ff_hwaddr);
 #endif
-*/
+
 #endif

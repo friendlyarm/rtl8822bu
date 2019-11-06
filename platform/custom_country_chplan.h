@@ -19,3 +19,4 @@
 static const struct country_chplan CUSTOMIZED_country_chplan_map[] = {
 	COUNTRY_CHPLAN_ENT("TW", 0x76, 1, 0x3FF), /* Taiwan */
 };
+

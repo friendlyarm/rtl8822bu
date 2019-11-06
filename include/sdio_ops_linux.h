@@ -55,3 +55,4 @@ int __must_check rtw_sdio_raw_write(struct dvobj_priv *d, unsigned int addr,
 				void *buf, size_t len, bool fixed);
 
 #endif /* __SDIO_OPS_LINUX_H__ */
+

@@ -503,7 +503,6 @@ void rtw_get_adapter_tx_rate_bmp_by_bw(_adapter *adapter, u8 bw, u16 *r_bmp_cck_
 
 	/* TODO: mlmeext->tx_rate*/
 
-exit:
 	if (r_bmp_cck_ofdm)
 		*r_bmp_cck_ofdm = bmp_cck_ofdm;
 	if (r_bmp_ht)
@@ -882,9 +881,9 @@ static void update_attrib_vcs_info(_adapter *padapter, struct xmit_frame *pxmitf
 #ifdef CONFIG_WMMPS_STA
 /*
  * update_attrib_trigger_frame_info
- * For Station mode, if a specific TID of driver setting and an AP support uapsd function, the data
+ * For Station mode, if a specific TID of driver setting and an AP support uapsd function, the data 
  * frame with corresponding TID will be a trigger frame when driver is in wmm power saving mode.
- *
+ * 
  * Arguments:
  * @padapter: _adapter pointer.
  * @pattrib: pkt_attrib pointer.
@@ -894,7 +893,7 @@ static void update_attrib_vcs_info(_adapter *padapter, struct xmit_frame *pxmitf
  */
 static void update_attrib_trigger_frame_info(_adapter *padapter, struct pkt_attrib *pattrib) {
 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
-	struct pwrctrl_priv 	*pwrpriv = adapter_to_pwrctl(padapter);
+	struct pwrctrl_priv 	*pwrpriv = adapter_to_pwrctl(padapter); 
 	struct qos_priv 	*pqospriv = &pmlmepriv->qospriv;
 	u8 trigger_frame_en = 0;
 
@@ -1190,6 +1189,15 @@ static void set_qos(struct pkt_file *ppktfile, struct pkt_attrib *pattrib)
 			UserPriority = 7;
 		}
 	*/
+
+	#ifdef CONFIG_ICMP_VOQ
+	if(pattrib->icmp_pkt==1)/*use VO queue to send icmp packet*/
+		UserPriority = 7;
+	#endif
+	#ifdef CONFIG_IP_R_MONITOR
+	if (pattrib->ether_type == ETH_P_ARP)
+		UserPriority = 7;
+	#endif/*CONFIG_IP_R_MONITOR*/
 	pattrib->priority = UserPriority;
 	pattrib->hdrlen = WLAN_HDR_A3_QOS_LEN;
 	pattrib->subtype = WIFI_QOS_DATA_TYPE;
@@ -1278,19 +1286,49 @@ exit:
 
 #endif /* CONFIG_TDLS */
 
-/*get non-qos hw_ssn control register,mapping to REG_HW_SEQ0,1,2,3*/
+/*get non-qos hw_ssn control register,mapping to REG_HW_SEQ 0,1,2,3*/
 inline u8 rtw_get_hwseq_no(_adapter *padapter)
 {
 	u8 hwseq_num = 0;
+
 #ifdef CONFIG_CONCURRENT_MODE
+	#if defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C)
+	hwseq_num = padapter->iface_id;
+	if (hwseq_num > 3)
+		hwseq_num = 3;
+	#else
 	if (!is_primary_adapter(padapter))
 		hwseq_num = 1;
-	/* else */
-	/*	hwseq_num = 2; */
+	#endif
 #endif /* CONFIG_CONCURRENT_MODE */
 	return hwseq_num;
 }
+#ifdef CONFIG_LPS
+#define LPS_PT_NORMAL	0
+#define LPS_PT_SP		1/* only DHCP packets is as SPECIAL_PACKET*/
+#define LPS_PT_ICMP		2
 
+/*If EAPOL , ARP , OR DHCP packet, driver must be in active mode.*/
+static u8 _rtw_lps_chk_packet_type(struct pkt_attrib *pattrib)
+{
+	u8 pkt_type = LPS_PT_NORMAL; /*normal data frame*/
+
+	#ifdef CONFIG_WAPI_SUPPORT
+	if ((pattrib->ether_type == 0x88B4) || (pattrib->ether_type == 0x0806) || (pattrib->ether_type == 0x888e) || (pattrib->dhcp_pkt == 1))
+		pkt_type = LPS_PT_SP;
+	#else /* !CONFIG_WAPI_SUPPORT */
+
+	#ifndef CONFIG_LPS_NOT_LEAVE_FOR_ICMP
+	if (pattrib->icmp_pkt == 1)
+		pkt_type = LPS_PT_ICMP;
+	else
+	#endif
+		if (pattrib->dhcp_pkt == 1)
+			pkt_type = LPS_PT_SP;
+	#endif
+	return pkt_type;
+}
+#endif
 static s32 update_attrib(_adapter *padapter, _pkt *pkt, struct pkt_attrib *pattrib)
 {
 	uint i;
@@ -1304,7 +1342,9 @@ static s32 update_attrib(_adapter *padapter, _pkt *pkt, struct pkt_attrib *pattr
 	struct qos_priv		*pqospriv = &pmlmepriv->qospriv;
 	struct xmit_priv		*pxmitpriv = &padapter->xmitpriv;
 	sint res = _SUCCESS;
-
+#ifdef CONFIG_LPS
+	u8 pkt_type = 0;
+#endif
 
 	DBG_COUNTER(padapter->tx_logs.core_tx_upd_attrib);
 
@@ -1445,29 +1485,34 @@ get_sta_info:
 		}
 
 	} else if (0x888e == pattrib->ether_type)
-		RTW_PRINT("send eapol packet\n");
+		parsing_eapol_packet(padapter, pktfile.cur_addr, psta, 1);
+#ifdef DBG_ARP_DUMP
+	else if (pattrib->ether_type == ETH_P_ARP) {
+		u8 arp[28] = {0};
+
+		_rtw_pktfile_read(&pktfile, arp, 28);
+		dump_arp_pkt(RTW_DBGDUMP, etherhdr.h_dest, etherhdr.h_source, arp, 1);
+	}
+#endif
 
 	if ((pattrib->ether_type == 0x888e) || (pattrib->dhcp_pkt == 1))
 		rtw_mi_set_scan_deny(padapter, 3000);
 
+	if (check_fwstate(pmlmepriv, WIFI_STATION_STATE) &&
+		pattrib->ether_type == ETH_P_ARP &&
+		!IS_MCAST(pattrib->dst)) {
+		rtw_mi_set_scan_deny(padapter, 1000);
+		rtw_mi_scan_abort(padapter, _FALSE); /*rtw_scan_abort_no_wait*/
+	}
+
 #ifdef CONFIG_LPS
-	/* If EAPOL , ARP , OR DHCP packet, driver must be in active mode. */
-#ifdef CONFIG_WAPI_SUPPORT
-	if ((pattrib->ether_type == 0x88B4) || (pattrib->ether_type == 0x0806) || (pattrib->ether_type == 0x888e) || (pattrib->dhcp_pkt == 1))
-#else /* !CONFIG_WAPI_SUPPORT */
-#if 0
-	if ((pattrib->ether_type == 0x0806) || (pattrib->ether_type == 0x888e) || (pattrib->dhcp_pkt == 1))
-#else /* only ICMP/DHCP packets is as SPECIAL_PACKET, and leave LPS when tx IMCP/DHCP packets. */
-	/* if ((pattrib->ether_type == 0x888e) || (pattrib->dhcp_pkt == 1) ) */
-	if (pattrib->icmp_pkt == 1)
-		rtw_lps_ctrl_wk_cmd(padapter, LPS_CTRL_LEAVE, 1);
-	else if (pattrib->dhcp_pkt == 1)
-#endif
-#endif
-	{
+	pkt_type = _rtw_lps_chk_packet_type(pattrib);
+
+	if (pkt_type == LPS_PT_SP) {/*packet is as SPECIAL_PACKET*/
 		DBG_COUNTER(padapter->tx_logs.core_tx_upd_attrib_active);
 		rtw_lps_ctrl_wk_cmd(padapter, LPS_CTRL_SPECIAL_PACKET, 1);
-	}
+	} else if (pkt_type == LPS_PT_ICMP)
+		rtw_lps_ctrl_wk_cmd(padapter, LPS_CTRL_LEAVE, 1);
 #endif /* CONFIG_LPS */
 
 #ifdef CONFIG_BEAMFORMING
@@ -1530,7 +1575,7 @@ get_sta_info:
 
 #ifdef CONFIG_WMMPS_STA
 	update_attrib_trigger_frame_info(padapter, pattrib);
-#endif /* CONFIG_WMMPS_STA */
+#endif /* CONFIG_WMMPS_STA */	
 
 	/* pattrib->priority = 5; */ /* force to used VI queue, for testing */
 	pattrib->hw_ssn_sel = pxmitpriv->hw_ssn_seq_no;
@@ -1833,7 +1878,7 @@ s32 rtw_make_wlanhdr(_adapter *padapter , u8 *hdr, struct pkt_attrib *pattrib)
 				/* TBD: temporary set (rspi, eosp) = (0, 1) which means End MPSP */
 				set_rspi(qc, 0);
 				SetEOSP(qc, 1);
-
+				
 				set_mctrl_present(qc, 1);
 			}
 #endif
@@ -3162,11 +3207,15 @@ void rtw_count_tx_stats(PADAPTER padapter, struct xmit_frame *pxmitframe, int sz
 			pstats->tx_pkts += pkt_num;
 
 			pstats->tx_bytes += sz;
+			#if defined(CONFIG_CHECK_LEAVE_LPS) && defined(CONFIG_LPS_CHK_BY_TP)
+			if (adapter_to_pwrctl(padapter)->lps_chk_by_tp)
+				traffic_check_for_leave_lps_by_tp(padapter, _TRUE, psta);
+			#endif /* CONFIG_LPS */
 		}
 
 #ifdef CONFIG_CHECK_LEAVE_LPS
 		/* traffic_check_for_leave_lps(padapter, _TRUE); */
-#endif /* CONFIG_LPS */
+#endif /* CONFIG_CHECK_LEAVE_LPS */
 
 	}
 }
@@ -3202,9 +3251,6 @@ static struct xmit_buf *__rtw_alloc_cmd_xmitbuf(struct xmit_priv *pxmitpriv,
 		}
 	} else
 		RTW_INFO("%s fail, no xmitbuf available !!!\n", __func__);
-
-exit:
-
 
 	return pxmitbuf;
 }
@@ -4358,23 +4404,32 @@ static void do_queue_select(_adapter	*padapter, struct pkt_attrib *pattrib)
  #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24))
 s32 rtw_monitor_xmit_entry(struct sk_buff *skb, struct net_device *ndev)
 {
-	int rtap_len;
 	u16 frame_ctl;
-	struct rtw_ieee80211_hdr *dot11_hdr;
-	struct ieee80211_radiotap_header *rtap_hdr;
+	struct ieee80211_radiotap_header rtap_hdr;
 	_adapter *padapter = (_adapter *)rtw_netdev_priv(ndev);
+	struct pkt_file pktfile;
+	struct rtw_ieee80211_hdr *pwlanhdr;
+	struct pkt_attrib	*pattrib;
+	struct xmit_frame		*pmgntframe;
+	struct mlme_ext_priv	*pmlmeext = &(padapter->mlmeextpriv);
+	struct xmit_priv	*pxmitpriv = &(padapter->xmitpriv);
+	unsigned char	*pframe;
+	u8 dummybuf[32];
+	int len = skb->len, rtap_len;
 
-	if (skb)
-		rtw_mstat_update(MSTAT_TYPE_SKB, MSTAT_ALLOC_SUCCESS, skb->truesize);
 
+	rtw_mstat_update(MSTAT_TYPE_SKB, MSTAT_ALLOC_SUCCESS, skb->truesize);
+
+#ifndef CONFIG_CUSTOMER_ALIBABA_GENERAL
 	if (unlikely(skb->len < sizeof(struct ieee80211_radiotap_header)))
 		goto fail;
 
-	rtap_hdr = (struct ieee80211_radiotap_header *)skb->data;
-	if (unlikely(rtap_hdr->it_version))
+	_rtw_open_pktfile((_pkt *)skb, &pktfile);
+	_rtw_pktfile_read(&pktfile, (u8 *)(&rtap_hdr), sizeof(struct ieee80211_radiotap_header));
+	rtap_len = ieee80211_get_radiotap_len((u8 *)(&rtap_hdr));
+	if (unlikely(rtap_hdr.it_version))
 		goto fail;
 
-	rtap_len = ieee80211_get_radiotap_len(skb->data);
 	if (unlikely(skb->len < rtap_len))
 		goto fail;
 
@@ -4382,99 +4437,49 @@ s32 rtw_monitor_xmit_entry(struct sk_buff *skb, struct net_device *ndev)
 		RTW_INFO("radiotap len (should be 14): %d\n", rtap_len);
 		goto fail;
 	}
+	_rtw_pktfile_read(&pktfile, dummybuf, rtap_len-sizeof(struct ieee80211_radiotap_header));
+	len = len - rtap_len;
+#endif
+	pmgntframe = alloc_mgtxmitframe(pxmitpriv);
+	if (pmgntframe == NULL) {
+		rtw_udelay_os(500);
+		goto fail;
+	}
 
-	/* Skip the ratio tap header */
-	skb_pull(skb, rtap_len);
+	_rtw_memset(pmgntframe->buf_addr, 0, WLANHDR_OFFSET + TXDESC_OFFSET);
+	pframe = (u8 *)(pmgntframe->buf_addr) + TXDESC_OFFSET;
+//	_rtw_memcpy(pframe, (void *)checking, len);
+	_rtw_pktfile_read(&pktfile, pframe, len);
 
-	dot11_hdr = (struct rtw_ieee80211_hdr *)skb->data;
-	frame_ctl = le16_to_cpu(dot11_hdr->frame_ctl);
-	/* Check if the QoS bit is set */
 
+	/* Check DATA/MGNT frames */
+	pwlanhdr = (struct rtw_ieee80211_hdr *)pframe;
+	frame_ctl = le16_to_cpu(pwlanhdr->frame_ctl);
 	if ((frame_ctl & RTW_IEEE80211_FCTL_FTYPE) == RTW_IEEE80211_FTYPE_DATA) {
 
-		struct xmit_frame		*pmgntframe;
-		struct pkt_attrib	*pattrib;
-		unsigned char	*pframe;
-		struct rtw_ieee80211_hdr *pwlanhdr;
-		struct xmit_priv	*pxmitpriv = &(padapter->xmitpriv);
-		struct mlme_ext_priv	*pmlmeext = &(padapter->mlmeextpriv);
-		u8 *buf = skb->data;
-		u32 len = skb->len;
-
-		pmgntframe = alloc_mgtxmitframe(pxmitpriv);
-		if (pmgntframe == NULL) {
-			rtw_udelay_os(500);
-			goto fail;
-		}
 		pattrib = &pmgntframe->attrib;
-
 		update_monitor_frame_attrib(padapter, pattrib);
-
-		pattrib->retry_ctrl = _FALSE;
-
-		_rtw_memset(pmgntframe->buf_addr, 0, WLANHDR_OFFSET + TXDESC_OFFSET);
-
-		pframe = (u8 *)(pmgntframe->buf_addr) + TXDESC_OFFSET;
-
-		_rtw_memcpy(pframe, (void *)buf, len);
-
-		pattrib->pktlen = len;
-
-		pwlanhdr = (struct rtw_ieee80211_hdr *)pframe;
 
 		if (is_broadcast_mac_addr(pwlanhdr->addr3) || is_broadcast_mac_addr(pwlanhdr->addr1))
 			pattrib->rate = MGN_24M;
 
-		pmlmeext->mgnt_seq = GetSequence(pwlanhdr);
-		pattrib->seqnum = pmlmeext->mgnt_seq;
-		pmlmeext->mgnt_seq++;
-
-		pattrib->last_txcmdsz = pattrib->pktlen;
-
-		dump_mgntframe(padapter, pmgntframe);
-
 	} else {
-		struct xmit_frame		*pmgntframe;
-		struct pkt_attrib	*pattrib;
-		unsigned char	*pframe;
-		struct rtw_ieee80211_hdr *pwlanhdr;
-		struct xmit_priv	*pxmitpriv = &(padapter->xmitpriv);
-		struct mlme_ext_priv	*pmlmeext = &(padapter->mlmeextpriv);
-		u8 *buf = skb->data;
-		u32 len = skb->len;
-
-		pmgntframe = alloc_mgtxmitframe(pxmitpriv);
-		if (pmgntframe == NULL)
-			goto fail;
 
 		pattrib = &pmgntframe->attrib;
 		update_mgntframe_attrib(padapter, pattrib);
-		pattrib->retry_ctrl = _FALSE;
-
-		_rtw_memset(pmgntframe->buf_addr, 0, WLANHDR_OFFSET + TXDESC_OFFSET);
-
-		pframe = (u8 *)(pmgntframe->buf_addr) + TXDESC_OFFSET;
-
-		_rtw_memcpy(pframe, (void *)buf, len);
-
-		pattrib->pktlen = len;
-
-		pwlanhdr = (struct rtw_ieee80211_hdr *)pframe;
-
-		pmlmeext->mgnt_seq = GetSequence(pwlanhdr);
-		pattrib->seqnum = pmlmeext->mgnt_seq;
-		pmlmeext->mgnt_seq++;
-
-		pattrib->last_txcmdsz = pattrib->pktlen;
-
-		dump_mgntframe(padapter, pmgntframe);
 
 	}
+	pattrib->retry_ctrl = _FALSE;
+	pattrib->pktlen = len;
+	pmlmeext->mgnt_seq = GetSequence(pwlanhdr);
+	pattrib->seqnum = pmlmeext->mgnt_seq;
+	pmlmeext->mgnt_seq++;
+	pattrib->last_txcmdsz = pattrib->pktlen;
+
+	dump_mgntframe(padapter, pmgntframe);
 
 fail:
-
 	rtw_skb_free(skb);
-
 	return 0;
 }
 #endif
@@ -5290,7 +5295,9 @@ void xmit_delivery_enabled_frames(_adapter *padapter, struct sta_info *psta)
 
 	}
 
+#ifdef CONFIG_TDLS
 exit:
+#endif
 	/* _exit_critical_bh(&psta->sleep_q.lock, &irqL);	 */
 	_exit_critical_bh(&pxmitpriv->lock, &irqL);
 
@@ -5536,8 +5543,14 @@ bool rtw_xmit_ac_blocked(_adapter *adapter)
 #endif/* #ifdef DBG_CONFIG_ERROR_RESET */
 #endif/* #ifdef DBG_CONFIG_ERROR_DETECT */
 
-	if (rfctl->offch_state != OFFCHS_NONE)
+	if (rfctl->offch_state != OFFCHS_NONE
+		#ifdef CONFIG_DFS
+		|| IS_RADAR_DETECTED(rfctl) || rfctl->csa_ch
+		#endif
+	) {
 		blocked = _TRUE;
+		goto exit;
+	}
 
 	for (i = 0; i < dvobj->iface_nums; i++) {
 		iface = dvobj->padapters[i];

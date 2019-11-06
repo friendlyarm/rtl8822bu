@@ -1,3 +1,10 @@
 sftp-config.json
 *.o
 *.ko
+*.o.cmd
+
+.rtl8822bu.ko.cmd
+.tmp_versions/
+Module.symvers
+modules.order
+rtl8822bu.mod.c

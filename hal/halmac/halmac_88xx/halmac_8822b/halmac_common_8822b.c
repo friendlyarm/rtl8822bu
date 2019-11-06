@@ -128,8 +128,8 @@ set_hw_value_8822b(struct halmac_adapter *adapter, enum halmac_hw_id hw_id,
 enum halmac_ret_status
 fill_txdesc_check_sum_8822b(struct halmac_adapter *adapter, u8 *txdesc)
 {
-	u16 chksum = 0;
-	u16 *data = (u16 *)NULL;
+	__le16 chksum = 0;
+	__le16 *data;
 	u32 i;
 
 	if (!txdesc) {
@@ -142,7 +142,7 @@ fill_txdesc_check_sum_8822b(struct halmac_adapter *adapter, u8 *txdesc)
 
 	SET_TX_DESC_TXDESC_CHECKSUM(txdesc, 0x0000);
 
-	data = (u16 *)(txdesc);
+	data = (__le16 *)(txdesc);
 
 	/* HW clculates only 32byte */
 	for (i = 0; i < 8; i++)
@@ -150,9 +150,7 @@ fill_txdesc_check_sum_8822b(struct halmac_adapter *adapter, u8 *txdesc)
 
 	/* *(data + 2 * i) & *(data + (2 * i + 1) have endain issue*/
 	/* Process eniadn issue after checksum calculation */
-	chksum = rtk_le16_to_cpu(chksum);
-
-	SET_TX_DESC_TXDESC_CHECKSUM(txdesc, chksum);
+	SET_TX_DESC_TXDESC_CHECKSUM(txdesc, rtk_le16_to_cpu(chksum));
 
 	return HALMAC_RET_SUCCESS;
 }

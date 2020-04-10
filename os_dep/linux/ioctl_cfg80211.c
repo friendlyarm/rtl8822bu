@@ -439,6 +439,14 @@ u8 rtw_cfg80211_ch_switch_notify(_adapter *adapter, u8 ch, u8 bw, u8 offset, u8 
 	if (ret != _SUCCESS)
 		goto exit;
 
+	if (!cfg80211_chandef_valid(&chdef)) {
+		pr_err("RTW: bad channel freq=%u cf1=%u cf2=%u bw=%u\n",
+				chdef.chan->center_freq,
+				chdef.center_freq1, chdef.center_freq2,
+				chdef.width);
+		goto exit;
+	}
+
 	cfg80211_ch_switch_notify(adapter->pnetdev, &chdef);
 
 #else

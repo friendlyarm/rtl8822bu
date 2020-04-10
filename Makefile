@@ -1,5 +1,5 @@
 EXTRA_CFLAGS += $(USER_EXTRA_CFLAGS)
-EXTRA_CFLAGS += -O1
+EXTRA_CFLAGS += -O2
 #EXTRA_CFLAGS += -O3
 #EXTRA_CFLAGS += -Wall
 #EXTRA_CFLAGS += -Wextra
@@ -82,10 +82,10 @@ CONFIG_RTW_WIFI_HAL = y
 CONFIG_ICMP_VOQ = n
 CONFIG_IP_R_MONITOR = n #arp VOQ and high rate
 ########################## Debug ###########################
-CONFIG_RTW_DEBUG = y
+CONFIG_RTW_DEBUG = n
 # default log level is _DRV_INFO_ = 4,
 # please refer to "How_to_set_driver_debug_log_level.doc" to set the available level.
-CONFIG_RTW_LOG_LEVEL = 4
+CONFIG_RTW_LOG_LEVEL = 3
 ######################## Wake On Lan ##########################
 CONFIG_WOWLAN = n
 #bit2: deauth, bit1: unicast, bit0: magic pkt.
@@ -168,7 +168,7 @@ CONFIG_PLATFORM_NV_TK1_UBUNTU = n
 CONFIG_PLATFORM_RTL8197D = n
 CONFIG_PLATFORM_AML_S905 = n
 CONFIG_PLATFORM_ZTE_ZX296716 = n
-CONFIG_PLATFORM_SNI = y
+CONFIG_PLATFORM_SNI = n
 ########### CUSTOMER ################################
 CONFIG_CUSTOMER_HUAWEI_GENERAL = n
 
@@ -1213,6 +1213,42 @@ EXTRA_CFLAGS += -DRTW_LOG_LEVEL=$(CONFIG_RTW_LOG_LEVEL)
 endif
 
 EXTRA_CFLAGS += -DDM_ODM_SUPPORT_TYPE=0x04
+
+# { FriendlyARM boards support
+ifeq ($(CONFIG_VENDOR_FRIENDLYARM), y)
+MODULE_NAME := rtl8822bu
+
+ifeq ($(KERNELRELEASE),)
+$(info ********************************************************************************)
+$(info *  Building module - $(MODULE_NAME).ko for FriendlyARM boards)
+endif
+
+EXTRA_CFLAGS += -DCONFIG_LITTLE_ENDIAN
+EXTRA_CFLAGS += -DCONFIG_IOCTL_CFG80211 -DRTW_USE_CFG80211_STA_EVENT
+
+ARCH ?= arm64
+CROSS_COMPILE ?= aarch64-linux-
+KSRC ?= /opt/FriendlyARM/build/linux-4.4.y
+KLIB ?= /tmp/wireless-modules
+INSTALL_PREFIX :=
+
+ifeq ($(CONFIG_PLATFORM_ANDROID), y)
+ifeq ($(KERNELRELEASE),)
+$(info *  Building driver with Android support)
+endif
+EXTRA_CFLAGS += -DCONFIG_CONCURRENT_MODE
+EXTRA_CFLAGS += -DCONFIG_PLATFORM_ANDROID
+EXTRA_CFLAGS += -DRTW_ENABLE_WIFI_CONTROL_FUNC -DCONFIG_RADIO_WORK
+endif
+
+ifeq ($(KERNELRELEASE),)
+$(info *)
+$(info *    Kernel TOP-Dir: $(KSRC) )
+$(info *)
+$(info *  Copyright 2020 FriendlyELEC (http://www.friendlyarm.com/))
+$(info ********************************************************************************)
+endif
+endif # END of VENDOR_FRIENDLYARM }
 
 ifeq ($(CONFIG_PLATFORM_I386_PC), y)
 EXTRA_CFLAGS += -DCONFIG_LITTLE_ENDIAN

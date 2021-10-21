@@ -81,6 +81,9 @@ CONFIG_RTW_REPEATER_SON = n
 CONFIG_RTW_WIFI_HAL = y
 CONFIG_ICMP_VOQ = n
 CONFIG_IP_R_MONITOR = n #arp VOQ and high rate
+# disable virtual intf for openwrt 21.02
+CONFIG_RTW_VIRTUAL_INTF = n
+
 ########################## Debug ###########################
 CONFIG_RTW_DEBUG = n
 # default log level is _DRV_INFO_ = 4,
@@ -1213,6 +1216,10 @@ EXTRA_CFLAGS += -DRTW_LOG_LEVEL=$(CONFIG_RTW_LOG_LEVEL)
 endif
 
 EXTRA_CFLAGS += -DDM_ODM_SUPPORT_TYPE=0x04
+
+ifeq ($(CONFIG_RTW_VIRTUAL_INTF), y)
+EXTRA_CFLAGS += -DRTW_VIRTUAL_INTF=1
+endif
 
 # { FriendlyARM boards support
 ifeq ($(CONFIG_VENDOR_FRIENDLYARM), y)

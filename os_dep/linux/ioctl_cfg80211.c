@@ -17,6 +17,11 @@
 #include <drv_types.h>
 #include <hal_data.h>
 
+#if defined(CPTCFG_KERNEL_CODE)
+#undef LINUX_VERSION_CODE
+#define LINUX_VERSION_CODE CPTCFG_KERNEL_CODE
+#endif
+
 #ifdef CONFIG_IOCTL_CFG80211
 
 #ifndef DBG_RTW_CFG80211_STA_PARAM
@@ -1125,6 +1130,7 @@ check_bss:
 
 		#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
 		#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0))
+		roam_info.links[0].channel = notify_channel;
 		roam_info.links[0].bssid = cur_network->network.MacAddress;
 		#else
 		roam_info.bssid = cur_network->network.MacAddress;
@@ -6072,6 +6078,44 @@ static int cfg80211_rtw_set_monitor_channel(struct wiphy *wiphy
 	return 0;
 }
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0))
+static int cfg80211_rtw_get_channel(struct wiphy *wiphy,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 19, 2))
+	struct wireless_dev *wdev, unsigned int link_id,
+#else
+	struct wireless_dev *wdev,
+#endif
+	struct cfg80211_chan_def *chandef)
+{
+	_adapter *padapter = wiphy_to_adapter(wiphy);
+	struct mlme_ext_priv *mlmeext = &(padapter->mlmeextpriv);
+	u8 ht_option = 0;
+	u8 report = 0;
+	int retval = 1;
+
+	if (MLME_IS_ASOC(padapter)) {
+#ifdef CONFIG_80211N_HT
+		ht_option = padapter->mlmepriv.htpriv.ht_option;
+#endif /* CONFIG_80211N_HT */
+		report = 1;
+	} else if (MLME_IS_MONITOR(padapter)) {
+		/* monitor mode always set to HT
+		   we don't support sniffer No HT */
+		ht_option = 1;
+		report = 1;
+	}
+
+	if (report) {
+		rtw_chbw_to_cfg80211_chan_def(wiphy, chandef,
+			mlmeext->cur_channel, mlmeext->cur_bwmode,
+			mlmeext->cur_ch_offset, ht_option);
+		retval = 0;
+	}
+
+	return retval;
+}
+#endif
+
 static int	cfg80211_rtw_auth(struct wiphy *wiphy, struct net_device *ndev,
 		struct cfg80211_auth_request *req)
 {
@@ -9929,6 +9973,9 @@ static struct cfg80211_ops rtw_cfg80211_ops = {
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 6, 0))
 	.set_monitor_channel = cfg80211_rtw_set_monitor_channel,
+#endif
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0))
+	.get_channel = cfg80211_rtw_get_channel,
 #endif
 
 #ifdef CONFIG_P2P

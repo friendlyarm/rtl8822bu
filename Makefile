@@ -1230,6 +1230,29 @@ $(info *************************************************************************
 $(info *  Building module - $(MODULE_NAME).ko for FriendlyARM boards)
 endif
 
+ifneq ($(BACKPORT_DIR),)
+include $(BACKPORT_DIR)/versions
+
+ifeq ($(BACKPORTED_LINUX_VERSION_CODE),)
+$(error "BACKPORTED_LINUX_VERSION_CODE is undefined")
+endif
+
+NOSTDINC_FLAGS += \
+	-I$(BACKPORT_DIR)/backport-include/ \
+	-I$(BACKPORT_DIR)/backport-include/uapi \
+	-I$(BACKPORT_DIR)/include/ \
+	-I$(BACKPORT_DIR)/include/uapi \
+	-include backport/backport.h \
+	$(call backport-cc-disable-warning, unused-but-set-variable) \
+	-DCPTCFG_VERSION=\"$(BACKPORTS_VERSION)\" \
+	-DCPTCFG_KERNEL_VERSION=\"$(BACKPORTED_KERNEL_VERSION)\" \
+	-DCPTCFG_KERNEL_NAME=\"$(BACKPORTED_KERNEL_NAME)\" \
+	-DCPTCFG_KERNEL_CODE=$(BACKPORTED_LINUX_VERSION_CODE)
+
+KBUILD_EXTRA_SYMBOLS += $(BACKPORT_DIR)/Module.symvers
+endif
+
+EXTRA_CFLAGS += -Wno-vla
 EXTRA_CFLAGS += -DCONFIG_LITTLE_ENDIAN
 EXTRA_CFLAGS += -DCONFIG_IOCTL_CFG80211 -DRTW_USE_CFG80211_STA_EVENT
 

@@ -1252,7 +1252,8 @@ NOSTDINC_FLAGS += \
 KBUILD_EXTRA_SYMBOLS += $(BACKPORT_DIR)/Module.symvers
 endif
 
-EXTRA_CFLAGS += -Wno-vla
+EXTRA_CFLAGS += -Wno-vla -Wno-uninitialized -Wno-bool-operation
+EXTRA_CFLAGS += -Wno-misleading-indentation -Wno-implicit-fallthrough
 EXTRA_CFLAGS += -DCONFIG_LITTLE_ENDIAN
 EXTRA_CFLAGS += -DCONFIG_IOCTL_CFG80211 -DRTW_USE_CFG80211_STA_EVENT
 

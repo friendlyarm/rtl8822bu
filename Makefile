@@ -1256,6 +1256,7 @@ EXTRA_CFLAGS += -Wno-vla -Wno-uninitialized -Wno-bool-operation
 EXTRA_CFLAGS += -Wno-misleading-indentation -Wno-implicit-fallthrough
 EXTRA_CFLAGS += -DCONFIG_LITTLE_ENDIAN
 EXTRA_CFLAGS += -DCONFIG_IOCTL_CFG80211 -DRTW_USE_CFG80211_STA_EVENT
+EXTRA_CFLAGS += -DCONFIG_RTW_IOCTL_SET_COUNTRY
 
 ARCH ?= arm64
 CROSS_COMPILE ?= aarch64-linux-
